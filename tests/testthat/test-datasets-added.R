@@ -1,0 +1,33 @@
+test_that("new packaged datasets have expected structure", {
+  data("cattle_growth", package = "antedep")
+  data("cochlear_implant", package = "antedep")
+  data("labor_force_cat", package = "antedep")
+  data("race_100km", package = "antedep")
+
+  expect_true(is.list(cattle_growth))
+  expect_true(is.matrix(cattle_growth$y))
+  expect_equal(ncol(cattle_growth$y), 11)
+  expect_equal(length(cattle_growth$blocks), nrow(cattle_growth$y))
+
+  expect_true(is.list(cochlear_implant))
+  expect_true(is.matrix(cochlear_implant$y))
+  expect_equal(ncol(cochlear_implant$y), 4)
+  expect_equal(length(cochlear_implant$blocks), nrow(cochlear_implant$y))
+  expect_true(anyNA(cochlear_implant$y))
+
+  expect_true(is.list(labor_force_cat))
+  expect_true(is.matrix(labor_force_cat$y))
+  expect_type(labor_force_cat$y, "integer")
+  expect_equal(ncol(labor_force_cat$y), 5)
+  expect_equal(labor_force_cat$n_categories, 2L)
+  expect_false(anyNA(labor_force_cat$y))
+  expect_equal(nrow(labor_force_cat$y), sum(labor_force_cat$counts$Count))
+  expect_equal(labor_force_cat$time, 1967:1971)
+
+  expect_true(is.list(race_100km))
+  expect_true(is.matrix(race_100km$y))
+  expect_equal(ncol(race_100km$y), 10)
+  expect_equal(nrow(race_100km$y), length(race_100km$subject))
+  expect_equal(length(race_100km$age), nrow(race_100km$y))
+  expect_equal(race_100km$time, 1:10)
+})

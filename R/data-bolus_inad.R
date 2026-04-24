@@ -1,0 +1,21 @@
+#' Morphine bolus analgesia counts
+#'
+#' Morphine bolus self administration counts for two treatment groups
+#' recorded at 12 four hour time points. The data are stored in matrix
+#' form to facilitate use with antedependence models.
+#'
+#' @format A list with four components:
+#'   \describe{
+#'     \item{y}{integer matrix of dimension N by n_time containing all
+#'       subjects and time points}
+#'     \item{y_2mg}{integer matrix with rows corresponding to the 2 mg
+#'       treatment group}
+#'     \item{y_1mg}{integer matrix with rows corresponding to the 1 mg
+#'       treatment group}
+#'     \item{blocks}{integer vector of length N giving the block or
+#'       treatment group indicator, 1 for 2 mg and 2 for 1 mg}
+#'   }
+#'
+#' @source Dataset `bolus` from the \pkg{cold} package, converted to
+#'   matrix form and grouped by treatment.
+"bolus_inad"
