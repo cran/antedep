@@ -1,6 +1,6 @@
 # test_stationarity_cat.R - Likelihood ratio test for stationarity in categorical AD
 
-#' Likelihood ratio test for stationarity (categorical AD data)
+#' Likelihood Ratio Test for Stationarity (Categorical AD Data)
 #'
 #' Tests whether a categorical antedependence process satisfies stationarity
 #' constraints in the AD parameterization.
@@ -207,11 +207,19 @@ test_stationarity_cat <- function(y, order = 1, blocks = NULL,
     bic = c(fit_null$bic, fit_alt$bic)
   )
   
+  method_label <- switch(test, lrt = "Likelihood Ratio", score = "Score (Pearson)",
+                         mlrt = "Modified LRT", wald = "Wald", test)
+
   # Assemble output
   out <- list(
-    method = test,
+    statistic  = stats::setNames(stat_value, paste(method_label, "chi-squared")),
+    parameter  = stats::setNames(df, "df"),
+    p.value    = p_value,
+    method     = paste0(method_label,
+                        " Test for Stationarity of Categorical AD(", p, ")"),
+    data.name  = deparse(substitute(y)),
+    inference  = test,
     lrt_stat = stat_value,
-    statistic = stat_value,
     lrt_stat_raw = lrt_stat_raw,
     e_hat_mlrt = e_hat_mlrt,
     df = df,
@@ -222,8 +230,8 @@ test_stationarity_cat <- function(y, order = 1, blocks = NULL,
     order = p,
     table = table_df
   )
-  
-  class(out) <- "cat_lrt"
+
+  class(out) <- c("cat_lrt", "htest")
   out
 }
 
@@ -431,7 +439,7 @@ test_stationarity_cat <- function(y, order = 1, blocks = NULL,
 }
 
 
-#' Run all stationarity-related tests for categorical AD
+#' Run All Stationarity-Related Tests for Categorical AD
 #'
 #' Performs tests for time-invariance and stationarity constraints. For
 #' \code{order = 1}, the stationarity test corresponds to strict stationarity;
@@ -488,11 +496,9 @@ run_stationarity_tests_cat <- function(y, order = 1, blocks = NULL,
   # Build summary table
   table_df <- data.frame(
     test = c("Time-invariance", "Stationarity"),
-    method = c(test_ti$method, test_stat$method),
     lrt_stat = c(test_ti$lrt_stat, test_stat$lrt_stat),
     df = c(test_ti$df, test_stat$df),
     p_value = c(test_ti$p_value, test_stat$p_value),
-    significant = c(test_ti$p_value < 0.05, test_stat$p_value < 0.05),
     stringsAsFactors = FALSE
   )
   

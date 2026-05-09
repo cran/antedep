@@ -2,7 +2,7 @@
 % Please edit documentation in R/lrt_order_cat.R
 \name{run_order_tests_cat}
 \alias{run_order_tests_cat}
-\title{Run all pairwise order tests}
+\title{Run All Pairwise Order Tests for Categorical AD}
 \usage{
 run_order_tests_cat(
   y,

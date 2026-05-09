@@ -1,3 +1,18 @@
+# antedep 0.2.0
+
+## New features
+- New S3 methods `deviance()`, `confint()`, and `vcov()` for `gau_fit`,
+  `cat_fit`, and `inad_fit` objects, improving compatibility with standard
+  R model-fitting workflows.
+- New `summary.partial_corr()` method prints a lag-by-lag table of
+  intervenor-adjusted partial correlations (mean absolute value, range, and
+  number of significant pairs at each lag).
+
+## Improvements
+- Matrix inversion in `ci_inad()`, `fit_gau_em()`, and `cat_test_stats.R`
+  now uses `chol2inv(chol(.))` instead of `solve()` for symmetric
+  positive-definite matrices, improving numerical stability and efficiency.
+
 # antedep 0.1.0
 
 ## New features

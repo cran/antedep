@@ -2,7 +2,7 @@
 % Please edit documentation in R/lrt_stationarity_cat.R
 \name{run_stationarity_tests_cat}
 \alias{run_stationarity_tests_cat}
-\title{Run all stationarity-related tests for categorical AD}
+\title{Run All Stationarity-Related Tests for Categorical AD}
 \usage{
 run_stationarity_tests_cat(
   y,

@@ -2,7 +2,7 @@
 % Please edit documentation in R/lrt_mean_gau.R
 \name{test_contrast_gau}
 \alias{test_contrast_gau}
-\title{Test linear hypotheses on the mean under antedependence}
+\title{Test Linear Hypotheses on the Mean Under Antedependence}
 \usage{
 test_contrast_gau(y, C, c = NULL, p = 1L)
 }

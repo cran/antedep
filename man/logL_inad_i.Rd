@@ -2,7 +2,7 @@
 % Please edit documentation in R/loglik_inad.R
 \name{logL_inad_i}
 \alias{logL_inad_i}
-\title{INAD log likelihood contribution at time i (no fixed effect)}
+\title{INAD Log-Likelihood Contribution at Time i}
 \usage{
 logL_inad_i(
   y,

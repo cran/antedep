@@ -2,7 +2,7 @@
 % Please edit documentation in R/lrt_homogeneity_gau.R
 \name{test_homogeneity_gau}
 \alias{test_homogeneity_gau}
-\title{Likelihood ratio test for homogeneity across groups (Gaussian AD data)}
+\title{Likelihood Ratio Test for Homogeneity Across Groups (Gaussian AD Data)}
 \usage{
 test_homogeneity_gau(y, blocks, p = 1L, use_modified = TRUE)
 }

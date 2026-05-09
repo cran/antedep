@@ -1,7 +1,7 @@
 # File: R/test_stationarity_gau.R
 # Likelihood ratio tests for Gaussian AD stationarity constraints
 
-#' Likelihood ratio test for stationarity (Gaussian AD data)
+#' Likelihood Ratio Test for Stationarity (Gaussian AD Data)
 #'
 #' Tests whether time-varying Gaussian AD covariance parameters can be
 #' constrained to be constant over time.
@@ -68,6 +68,7 @@
 test_stationarity_gau <- function(y, order = 1L, blocks = NULL, constrain = "both",
                                  fit_unconstrained = NULL, verbose = FALSE,
                                  max_iter = 2000L, rel_tol = 1e-8, ...) {
+    data_name <- deparse(substitute(y))
     if (!is.matrix(y)) y <- as.matrix(y)
     if (anyNA(y)) {
         stop(
@@ -179,12 +180,19 @@ test_stationarity_gau <- function(y, order = 1L, blocks = NULL, constrain = "bot
     )
 
     out <- list(
-        method = "lrt",
+        # htest required slots
+        statistic  = stats::setNames(lrt_stat, "chi-squared"),
+        parameter  = stats::setNames(df, "df"),
+        p.value    = p_value,
+        method     = paste0("LRT for Gaussian AD(", order, ") Stationarity (",
+                            cinfo$description, ")"),
+        data.name  = data_name,
+        # additional slots
+        inference  = "lrt",
         fit_unconstrained = fit_unconstrained,
         fit_constrained = fit_constrained,
         constraint = cinfo$description,
         lrt_stat = lrt_stat,
-        statistic = lrt_stat,
         df = df,
         p_value = p_value,
         bic_unconstrained = bic_uncon,
@@ -204,12 +212,12 @@ test_stationarity_gau <- function(y, order = 1L, blocks = NULL, constrain = "bot
         )
     )
 
-    class(out) <- "test_stationarity_gau"
+    class(out) <- c("test_stationarity_gau", "htest")
     out
 }
 
 
-#' Run all stationarity-related tests for Gaussian AD
+#' Run All Stationarity-Related Tests for Gaussian AD
 #'
 #' Runs a standard set of stationarity constraints for Gaussian AD models.
 #'
@@ -301,12 +309,12 @@ run_stationarity_tests_gau <- function(y, order = 1L, blocks = NULL, verbose = F
 
     summary_df <- data.frame(
         constraint = tests_to_run,
-        method = vapply(results, function(x) x$method, character(1)),
-        df = vapply(results, function(x) x$df, numeric(1)),
-        LRT = vapply(results, function(x) x$lrt_stat, numeric(1)),
-        p_value = vapply(results, function(x) x$p_value, numeric(1)),
-        BIC_selected = vapply(results, function(x) x$bic_selected, character(1)),
-        stringsAsFactors = FALSE
+        df = unname(vapply(results, function(x) x$df, numeric(1))),
+        LRT = unname(vapply(results, function(x) x$lrt_stat, numeric(1))),
+        p_value = unname(vapply(results, function(x) x$p_value, numeric(1))),
+        BIC_selected = unname(vapply(results, function(x) x$bic_selected, character(1))),
+        stringsAsFactors = FALSE,
+        row.names = NULL
     )
 
     out <- list(
@@ -369,7 +377,7 @@ print.stationarity_tests_gau <- function(x, digits = 4, ...) {
             order = 0L,
             sigma_const = TRUE,
             df = df,
-            description = "sigma constant over time"
+            description = "sigma const."
         ))
     }
 
@@ -405,8 +413,8 @@ print.stationarity_tests_gau <- function(x, digits = 4, ...) {
 
         desc <- paste(
             c(
-                if (phi_const) "phi constant over time",
-                if (sigma_const) "sigma constant over time"
+                if (phi_const) "phi const.",
+                if (sigma_const) "sigma const."
             ),
             collapse = ", "
         )
@@ -473,7 +481,7 @@ print.stationarity_tests_gau <- function(x, digits = 4, ...) {
         c(
             if (phi1_const) "phi1 constant over time",
             if (phi2_const) "phi2 constant over time",
-            if (sigma_const) "sigma constant over time"
+            if (sigma_const) "sigma const."
         ),
         collapse = ", "
     )
@@ -702,6 +710,6 @@ print.stationarity_tests_gau <- function(x, digits = 4, ...) {
         )
     )
 
-    class(out) <- c("gau_fit", "list")
+    class(out) <- "gau_fit"
     out
 }

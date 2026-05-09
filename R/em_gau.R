@@ -1,4 +1,4 @@
-#' EM algorithm for Gaussian AD model estimation
+#' EM Algorithm for Gaussian AD Model Estimation
 #'
 #' Convenience wrapper around \code{\link{fit_gau}} with
 #' \code{na_action = "em"} to provide a parallel entry point to

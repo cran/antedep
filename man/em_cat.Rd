@@ -2,7 +2,7 @@
 % Please edit documentation in R/em_cat.R
 \name{em_cat}
 \alias{em_cat}
-\title{EM algorithm for categorical AD model estimation}
+\title{EM Algorithm for Categorical AD Model Estimation}
 \usage{
 em_cat(
   y,

@@ -2,7 +2,7 @@
 % Please edit documentation in R/lrt_order_cat.R
 \name{test_order_cat}
 \alias{test_order_cat}
-\title{Likelihood ratio test for antedependence order (categorical AD data)}
+\title{Likelihood Ratio Test for Antedependence Order (Categorical AD Data)}
 \usage{
 test_order_cat(
   y = NULL,

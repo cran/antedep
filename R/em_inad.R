@@ -1,4 +1,4 @@
-#' EM algorithm for INAD model estimation
+#' EM Algorithm for INAD Model Estimation
 #'
 #' Fits INAD models using the Expectation-Maximization algorithm.
 #' This is an alternative to direct likelihood optimization.
@@ -259,7 +259,43 @@ em_inad <- function(y, order = 1, thinning = "binom", innovation = "pois",
            error = function(e) -Inf)
 }
 
-#' Print method for INAD model fits
+#' Summary Method for INAD Model Fits
+#'
+#' Summary method for inad_fit objects
+#'
+#' @param object An \code{inad_fit} object.
+#' @param ... Unused.
+#' @return \code{object}, invisibly.
+#' @export
+summary.inad_fit <- function(object, ...) {
+    cat("INAD Antedependence Model -- Summary\n")
+    cat("====================================\n\n")
+    cat(sprintf("  Order            : %d\n",  object$settings$order))
+    cat(sprintf("  Thinning         : %s\n",  object$settings$thinning))
+    cat(sprintf("  Innovation       : %s\n",  object$settings$innovation))
+    cat(sprintf("  Subjects (n)     : %d\n",  object$settings$n_subjects))
+    cat(sprintf("  Time points (T)  : %d\n",  object$settings$n_time))
+    if (!is.null(object$n_params))
+        cat(sprintf("  Parameters       : %d\n",  object$n_params))
+    if (!is.null(object$n_missing))
+        cat(sprintf("  Missing values   : %d (%.1f%%)\n",
+                    object$n_missing, object$pct_missing))
+    cat("\nFit statistics:\n")
+    cat(sprintf("  Log-likelihood   : %.4f\n", object$log_l))
+    if (!is.null(object$aic)) cat(sprintf("  AIC              : %.4f\n", object$aic))
+    if (!is.null(object$bic)) cat(sprintf("  BIC              : %.4f\n", object$bic))
+    if (!is.null(object$theta)) {
+        cat("\nEstimated innovation mean (theta):\n")
+        print(round(as.numeric(object$theta), 4))
+    }
+    if (!is.null(object$alpha)) {
+        cat("\nEstimated thinning parameter (alpha):\n")
+        print(round(as.numeric(object$alpha), 4))
+    }
+    invisible(object)
+}
+
+#' Print Method for INAD Model Fits
 #'
 #' @param x An object of class \code{inad_fit}.
 #' @param digits Number of digits to print.

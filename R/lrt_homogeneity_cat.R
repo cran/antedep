@@ -1,6 +1,6 @@
 # test_homogeneity_cat.R - Likelihood ratio test for homogeneity in categorical AD
 
-#' Likelihood ratio test for homogeneity across groups (categorical AD data)
+#' Likelihood Ratio Test for Homogeneity Across Groups (Categorical AD Data)
 #'
 #' Tests whether multiple groups share the same transition probability parameters
 #' in a categorical antedependence model.
@@ -220,11 +220,19 @@ test_homogeneity_cat <- function(y = NULL, blocks = NULL, order = 1,
     bic = c(fit_null$bic, fit_alt$bic)
   )
   
+  method_label <- switch(test, lrt = "Likelihood Ratio", score = "Score (Pearson)",
+                         mlrt = "Modified LRT", wald = "Wald", test)
+
   # Assemble output
   out <- list(
-    method = test,
+    statistic  = stats::setNames(stat_value, paste(method_label, "chi-squared")),
+    parameter  = stats::setNames(df, "df"),
+    p.value    = p_value,
+    method     = paste0(method_label, " Test for Homogeneity of Categorical AD(",
+                        fit_null$settings$order, ") Across ", n_groups, " Groups"),
+    data.name  = if (!is.null(y)) deparse(substitute(y)) else "supplied fits",
+    inference  = test,
     lrt_stat = stat_value,
-    statistic = stat_value,
     lrt_stat_raw = lrt_stat_raw,
     e_hat_mlrt = e_hat_mlrt,
     df = df,
@@ -236,13 +244,13 @@ test_homogeneity_cat <- function(y = NULL, blocks = NULL, order = 1,
     order = fit_null$settings$order,
     table = table_df
   )
-  
-  class(out) <- "cat_lrt"
+
+  class(out) <- c("cat_lrt", "htest")
   out
 }
 
 
-#' Likelihood ratio test for time-invariance (categorical data)
+#' Likelihood Ratio Test for Time-Invariance (Categorical Data)
 #'
 #' Tests whether transition probabilities are constant over time in a
 #' categorical antedependence model.
@@ -427,11 +435,19 @@ test_timeinvariance_cat <- function(y, order = 1, blocks = NULL,
     bic = c(fit_null$bic, fit_alt$bic)
   )
   
+  method_label <- switch(test, lrt = "Likelihood Ratio", score = "Score (Pearson)",
+                         mlrt = "Modified LRT", wald = "Wald", test)
+
   # Assemble output
   out <- list(
-    method = test,
+    statistic  = stats::setNames(stat_value, paste(method_label, "chi-squared")),
+    parameter  = stats::setNames(df, "df"),
+    p.value    = p_value,
+    method     = paste0(method_label,
+                        " Test for Time-Invariance of Categorical AD(", p, ")"),
+    data.name  = deparse(substitute(y)),
+    inference  = test,
     lrt_stat = stat_value,
-    statistic = stat_value,
     lrt_stat_raw = lrt_stat_raw,
     e_hat_mlrt = e_hat_mlrt,
     df = df,
@@ -442,8 +458,8 @@ test_timeinvariance_cat <- function(y, order = 1, blocks = NULL,
     order = p,
     table = table_df
   )
-  
-  class(out) <- "cat_lrt"
+
+  class(out) <- c("cat_lrt", "htest")
   out
 }
 

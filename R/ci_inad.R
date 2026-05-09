@@ -1,4 +1,4 @@
-#' Confidence intervals for fitted INAD models
+#' Confidence Intervals for Fitted INAD Models
 #'
 #' Computes confidence intervals for selected parameters from a fitted INAD model.
 #' For the fixed effect case, Wald intervals for time varying alpha and theta are
@@ -385,7 +385,7 @@ summary.inad_ci <- function(object, ...) {
                               thinning, innovation, nb_inno_size)
     if (ridge > 0) Iobs <- Iobs + diag(ridge, nrow(Iobs))
 
-    V <- tryCatch(solve(Iobs), error = function(e) NULL)
+    V <- tryCatch(chol2inv(chol(Iobs)), error = function(e) NULL)
     if (is.null(V)) stop("Singular information at i = ", i, ".")
 
     z <- qnorm(1 - (1 - level) / 2)

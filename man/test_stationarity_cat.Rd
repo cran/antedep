@@ -2,7 +2,7 @@
 % Please edit documentation in R/lrt_stationarity_cat.R
 \name{test_stationarity_cat}
 \alias{test_stationarity_cat}
-\title{Likelihood ratio test for stationarity (categorical AD data)}
+\title{Likelihood Ratio Test for Stationarity (Categorical AD Data)}
 \usage{
 test_stationarity_cat(
   y,

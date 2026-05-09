@@ -2,7 +2,7 @@
 % Please edit documentation in R/lrt_mean_gau.R
 \name{test_one_sample_gau}
 \alias{test_one_sample_gau}
-\title{One-sample test for mean structure under antedependence}
+\title{One-Sample Test for Mean Structure Under Antedependence}
 \usage{
 test_one_sample_gau(y, mu0, p = 1L, order = NULL, use_modified = TRUE)
 }

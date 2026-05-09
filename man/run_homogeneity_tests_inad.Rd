@@ -2,7 +2,7 @@
 % Please edit documentation in R/lrt_homogeneity_inad.R
 \name{run_homogeneity_tests_inad}
 \alias{run_homogeneity_tests_inad}
-\title{Run all homogeneity tests for INAD}
+\title{Run All Homogeneity Tests for INAD}
 \usage{
 run_homogeneity_tests_inad(
   y,

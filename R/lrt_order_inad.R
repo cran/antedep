@@ -1,4 +1,4 @@
-#' Likelihood ratio test for antedependence order (INAD data)
+#' Likelihood Ratio Test for Antedependence Order (INAD Data)
 #'
 #' Performs a likelihood ratio test comparing INAD models of different orders.
 #'
@@ -60,7 +60,7 @@
 #' @examples
 #' set.seed(1)
 #' y <- simulate_inad(
-#'   n_subjects = 40,
+#'   n_subjects = 15,
 #'   n_time = 5,
 #'   order = 1,
 #'   thinning = "binom",
@@ -74,7 +74,7 @@
 #'   order_alt = 1,
 #'   thinning = "binom",
 #'   innovation = "pois",
-#'   max_iter = 20
+#'   max_iter = 8
 #' )
 #' out$statistic
 #' @export
@@ -82,6 +82,7 @@ test_order_inad <- function(y, order_null = 0, order_alt = 1,
                            thinning = "binom", innovation = "pois",
                            blocks = NULL, use_chibar = TRUE, weights = NULL,
                            fit_null = NULL, fit_alt = NULL, ...) {
+    data_name <- deparse(substitute(y))
   if (!is.matrix(y)) y <- as.matrix(y)
   y_obs <- y[!is.na(y)]
   if (any(y_obs < 0) || any(y_obs != floor(y_obs))) stop("y must contain non-negative integers")
@@ -135,22 +136,31 @@ test_order_inad <- function(y, order_null = 0, order_alt = 1,
                                    .count_params_inad(order_alt, n_time, n_blocks, thinning, innovation)),
                       BIC = c(bic_null, bic_alt), stringsAsFactors = FALSE)
   
-  result <- list(method = "lrt", fit_null = fit_null, fit_alt = fit_alt,
-                 statistic = lrt_stat, lrt_stat = lrt_stat, df = df,
-                 p_value = p_value, p_value_chibar = p_value_chibar,
-                 bic_null = bic_null, bic_alt = bic_alt, bic_selected = bic_selected, table = table,
-                 settings = list(order_null = order_null, order_alt = order_alt, thinning = thinning,
-                                 innovation = innovation, n_subjects = n_subjects, n_time = n_time,
-                                 n_blocks = n_blocks, use_chibar = use_chibar))
-  class(result) <- "test_order_inad"
+  result <- list(
+    # htest required slots
+    statistic  = stats::setNames(lrt_stat, "chi-squared"),
+    parameter  = stats::setNames(df, "df"),
+    p.value    = p_value,
+    method     = paste0("LRT for INAD Order (H0: Order ", order_null,
+                        " vs H1: Order ", order_alt, ")"),
+    data.name  = data_name,
+    # additional slots
+    inference  = "lrt",
+    fit_null = fit_null, fit_alt = fit_alt,
+    lrt_stat = lrt_stat, df = df,
+    p_value = p_value, p_value_chibar = p_value_chibar,
+    bic_null = bic_null, bic_alt = bic_alt, bic_selected = bic_selected, table = table,
+    settings = list(order_null = order_null, order_alt = order_alt, thinning = thinning,
+                    innovation = innovation, n_subjects = n_subjects, n_time = n_time,
+                    n_blocks = n_blocks, use_chibar = use_chibar))
+  class(result) <- c("test_order_inad", "htest")
   result
 }
 
 #' @export
 print.test_order_inad <- function(x, digits = 4, ...) {
   stat <- if (!is.null(x$statistic)) x$statistic else x$lrt_stat
-  cat("\nLikelihood Ratio Test for INAD Model Order\n")
-  cat("===========================================\n\n")
+  cat("\nLikelihood Ratio Test for INAD Model Order\n\n")
   cat("H0: Order", x$settings$order_null, " vs H1: Order", x$settings$order_alt, "\n\n")
   print(x$table, row.names = FALSE, digits = digits)
   cat("\nLRT:", round(stat, digits), " df:", x$df, " p-value:", format.pval(x$p_value, digits = digits))
@@ -176,7 +186,7 @@ print.test_order_inad <- function(x, digits = 4, ...) {
   n_alpha + n_theta + n_tau + n_nb_inno
 }
 
-#' BIC-based order selection for INAD models
+#' BIC-Based Order Selection for INAD Models
 #'
 #' Fits INAD models across candidate orders and reports BIC-based selection.
 #' @param y Integer matrix.

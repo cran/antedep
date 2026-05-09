@@ -2,7 +2,7 @@
 % Please edit documentation in R/ci_gau.R
 \name{ci_gau}
 \alias{ci_gau}
-\title{Confidence intervals for fitted Gaussian AD models}
+\title{Confidence Intervals for Fitted Gaussian AD Models}
 \usage{
 ci_gau(fit, level = 0.95, parameters = "all")
 }

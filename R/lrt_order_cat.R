@@ -18,7 +18,7 @@
   )
 }
 
-#' Likelihood ratio test for antedependence order (categorical AD data)
+#' Likelihood Ratio Test for Antedependence Order (Categorical AD Data)
 #'
 #' Tests whether a higher-order AD model provides significantly better fit
 #' than a lower-order model for categorical longitudinal data.
@@ -104,6 +104,7 @@ test_order_cat <- function(y = NULL, order_null = 0, order_alt = 1,
                           blocks = NULL, homogeneous = TRUE, n_categories = NULL,
                           fit_null = NULL, fit_alt = NULL,
                           test = c("lrt", "score", "mlrt", "wald")) {
+    data_name <- if (!is.null(y)) deparse(substitute(y)) else "supplied fits"
   test <- match.arg(test)
   
  # Validate that we have either y or pre-fitted models
@@ -240,11 +241,28 @@ test_order_cat <- function(y = NULL, order_null = 0, order_alt = 1,
     bic = c(fit_null$bic, fit_alt$bic)
   )
   
+  # Human-readable method name
+  method_label <- switch(test,
+    lrt   = "Likelihood Ratio",
+    score = "Score (Pearson)",
+    mlrt  = "Modified LRT",
+    wald  = "Wald",
+    test
+  )
+
   # Assemble output
   out <- list(
-    method = test,
+    # htest required slots
+    statistic  = stats::setNames(stat_value, paste(method_label, "chi-squared")),
+    parameter  = stats::setNames(df, "df"),
+    p.value    = p_value,
+    method     = paste0(method_label, " Test for Categorical AD Order (H0: AD(",
+                        fit_null$settings$order, ") vs H1: AD(",
+                        fit_alt$settings$order, "))"),
+    data.name  = data_name,
+    # additional slots
+    inference  = test,
     lrt_stat = stat_value,
-    statistic = stat_value,
     lrt_stat_raw = lrt_stat_raw,
     e_hat_mlrt = e_hat_mlrt,
     df = df,
@@ -256,8 +274,8 @@ test_order_cat <- function(y = NULL, order_null = 0, order_alt = 1,
     order_alt = fit_alt$settings$order,
     table = table_df
   )
-  
-  class(out) <- "cat_lrt"
+
+  class(out) <- c("cat_lrt", "htest")
   out
 }
 
@@ -304,7 +322,7 @@ print.cat_lrt <- function(x, ...) {
 }
 
 
-#' Run all pairwise order tests
+#' Run All Pairwise Order Tests for Categorical AD
 #'
 #' Performs sequential likelihood ratio tests for AD orders 0 vs 1, 1 vs 2, etc.
 #'

@@ -2,7 +2,7 @@
 % Please edit documentation in R/lrt_stationarity_inad.R
 \name{run_stationarity_tests_inad}
 \alias{run_stationarity_tests_inad}
-\title{Run all stationarity-related tests for INAD}
+\title{Run All Stationarity-Related Tests for INAD}
 \usage{
 run_stationarity_tests_inad(
   y,
@@ -33,12 +33,12 @@ run_stationarity_tests_inad(
 A list with class "stationarity_tests_inad".
 }
 \description{
-Run all stationarity-related tests for INAD
+Run All Stationarity-Related Tests for INAD
 }
 \examples{
 set.seed(1)
 y <- simulate_inad(
-  n_subjects = 25,
+  n_subjects = 15,
   n_time = 5,
   order = 1,
   thinning = "binom",
@@ -52,7 +52,7 @@ out <- run_stationarity_tests_inad(
   thinning = "binom",
   innovation = "pois",
   verbose = FALSE,
-  max_iter = 15
+  max_iter = 8
 )
 out$summary
 }

@@ -1,4 +1,4 @@
-#' Morphine bolus analgesia counts
+#' Morphine Bolus Analgesia Counts
 #'
 #' Morphine bolus self administration counts for two treatment groups
 #' recorded at 12 four hour time points. The data are stored in matrix

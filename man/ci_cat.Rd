@@ -2,7 +2,7 @@
 % Please edit documentation in R/ci_cat.R
 \name{ci_cat}
 \alias{ci_cat}
-\title{Confidence intervals for fitted categorical AD models}
+\title{Confidence Intervals for Fitted Categorical AD Models}
 \usage{
 ci_cat(fit, y = NULL, level = 0.95, parameters = "all")
 }

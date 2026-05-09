@@ -622,7 +622,7 @@
   V <- V + diag(ridge, nrow = nrow(V))
 
   w <- tryCatch(
-    as.vector(qr.solve(V, d, tol = 1e-10)),
+    as.vector(chol2inv(chol(V)) %*% d),
     error = function(e) NULL
   )
   if (is.null(w) || any(!is.finite(w))) {

@@ -3,7 +3,7 @@
 \docType{data}
 \name{labor_force_cat}
 \alias{labor_force_cat}
-\title{Labor force longitudinal categorical data (Table 1)}
+\title{Labor Force Longitudinal Categorical Data (Table 1)}
 \format{
 A list with five components:
 \describe{

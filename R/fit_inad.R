@@ -1,4 +1,4 @@
-#' Fit INAD antedependence model by maximum likelihood
+#' Fit INAD Antedependence Model by Maximum Likelihood
 #'
 #' Fits INAD models by maximum likelihood.
 #'

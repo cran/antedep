@@ -2,7 +2,7 @@
 % Please edit documentation in R/fit_gau.R
 \name{fit_gau}
 \alias{fit_gau}
-\title{Fit Gaussian antedependence model by maximum likelihood}
+\title{Fit Gaussian Antedependence Model by Maximum Likelihood}
 \usage{
 fit_gau(
   y,

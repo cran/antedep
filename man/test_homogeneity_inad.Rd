@@ -2,7 +2,7 @@
 % Please edit documentation in R/lrt_homogeneity_inad.R
 \name{test_homogeneity_inad}
 \alias{test_homogeneity_inad}
-\title{Likelihood ratio test for homogeneity across groups (INAD data)}
+\title{Likelihood Ratio Test for Homogeneity Across Groups (INAD Data)}
 \usage{
 test_homogeneity_inad(
   y,

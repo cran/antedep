@@ -1,4 +1,4 @@
-#' Labor force longitudinal categorical data (Table 1)
+#' Labor Force Longitudinal Categorical Data (Table 1)
 #'
 #' Five-year employment-status sequences reconstructed from Table 1 in the
 #' labor-force example used in Xie and Zimmerman score/Wald antedependence

@@ -1,4 +1,4 @@
-#' Fit Gaussian antedependence model by maximum likelihood
+#' Fit Gaussian Antedependence Model by Maximum Likelihood
 #'
 #' Fits an AD(0), AD(1), or AD(2) model for Gaussian longitudinal data
 #' by maximum likelihood. Missing values can be handled by complete-case
@@ -258,14 +258,52 @@ fit_gau <- function(y, order = 1, blocks = NULL,
         )
     )
 
-    class(result) <- c("gau_fit", "list")
+    class(result) <- "gau_fit"
     result
 }
 
-#' Print method for gau_fit objects
+#' Summary method for gau_fit objects
+#'
+#' Prints a structured table of model-fit statistics and estimated parameters.
+#'
+#' @param object A \code{gau_fit} object.
+#' @param ... Unused.
+#'
+#' @return \code{object}, invisibly.
+#' @export
+summary.gau_fit <- function(object, ...) {
+    cat("Gaussian Antedependence Model -- Summary\n")
+    cat("========================================\n\n")
+    cat(sprintf("  Order            : %d\n", object$settings$order))
+    cat(sprintf("  Subjects (n)     : %d\n", object$settings$n_subjects))
+    cat(sprintf("  Time points (T)  : %d\n", object$settings$n_time))
+    cat(sprintf("  Parameters       : %d\n", object$n_params))
+    cat(sprintf("  Missing values   : %d (%.1f%%)\n",
+                object$n_missing, object$pct_missing))
+    cat("\nFit statistics:\n")
+    cat(sprintf("  Log-likelihood   : %.4f\n", object$log_l))
+    cat(sprintf("  AIC              : %.4f\n", stats::AIC(object)))
+    cat(sprintf("  BIC              : %.4f\n", stats::BIC(object)))
+    if (!is.null(object$mu)) {
+        cat("\nEstimated mean (mu):\n")
+        print(round(as.numeric(object$mu), 4))
+    }
+    if (!is.null(object$phi) && length(as.numeric(object$phi)) > 0) {
+        cat("\nAntedependence parameters (phi):\n")
+        print(round(as.numeric(object$phi), 4))
+    }
+    if (!is.null(object$sigma)) {
+        cat("\nInnovation std dev (sigma):\n")
+        print(round(as.numeric(object$sigma), 4))
+    }
+    invisible(object)
+}
+
+#' Print Method for gau_fit Objects
 #'
 #' @param x A \code{gau_fit} object.
 #' @param ... Additional arguments (ignored).
+#' @return The input object, invisibly.
 #'
 #' @export
 print.gau_fit <- function(x, ...) {

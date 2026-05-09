@@ -2,7 +2,7 @@
 % Please edit documentation in R/lrt_order_gau.R
 \name{bic_order_gau}
 \alias{bic_order_gau}
-\title{BIC-based order selection for Gaussian AD models}
+\title{BIC-Based Order Selection for Gaussian AD Models}
 \usage{
 bic_order_gau(y, max_order = 2L, ...)
 }

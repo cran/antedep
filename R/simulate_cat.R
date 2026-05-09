@@ -1,6 +1,6 @@
 # simulate_cat.R - Data simulation for categorical antedependence models
 
-#' Simulate categorical antedependence series
+#' Simulate Categorical Antedependence Series
 #'
 #' Generate simulated longitudinal categorical data from an AD(p) model with
 #' specified transition probabilities.
@@ -19,8 +19,11 @@
 #'   If FALSE, marginal and transition should be lists indexed by block.
 #' @param seed Optional random seed for reproducibility.
 #'
-#' @return Integer matrix with n_subjects rows and n_time columns, where each
-#'   entry is a category code from 1 to c.
+#' @return An integer matrix of class \code{c("cat_sim", "matrix")} with
+#'   \code{n_subjects} rows and \code{n_time} columns, where each entry is a
+#'   category code from 1 to \code{n_categories}.  Use
+#'   \code{\link[stats]{as.ts}(y)} (or \code{ts(t(y))}) to convert to an
+#'   \code{mts} time-series object where rows correspond to time points.
 #'
 #' @details
 #' Data are simulated sequentially:
@@ -112,6 +115,7 @@ simulate_cat <- function(n_subjects, n_time, order = 1, n_categories = 2,
     y[s, ] <- .simulate_subject_cat(n_time, p, c, marg_s, trans_s)
   }
   
+  class(y) <- c("cat_sim", "matrix")
   y
 }
 

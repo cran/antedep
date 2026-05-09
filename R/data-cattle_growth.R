@@ -1,4 +1,4 @@
-#' Cattle growth data (Treatments A and B)
+#' Cattle Growth Data (Treatments A and B)
 #'
 #' Longitudinal cattle growth measurements for two treatment groups from
 #' Zimmerman and Nunez-Anton antedependence book companion data. This dataset

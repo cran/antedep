@@ -3,7 +3,7 @@
 \docType{data}
 \name{cattle_growth}
 \alias{cattle_growth}
-\title{Cattle growth data (Treatments A and B)}
+\title{Cattle Growth Data (Treatments A and B)}
 \format{
 A list with five components:
 \describe{

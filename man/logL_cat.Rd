@@ -2,7 +2,7 @@
 % Please edit documentation in R/loglik_cat.R
 \name{logL_cat}
 \alias{logL_cat}
-\title{Log-likelihood for categorical AD models (with missing data support)}
+\title{Log-Likelihood for Categorical AD Models}
 \usage{
 logL_cat(
   y,

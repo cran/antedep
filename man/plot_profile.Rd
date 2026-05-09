@@ -2,7 +2,7 @@
 % Please edit documentation in R/diagnostics.R
 \name{plot_profile}
 \alias{plot_profile}
-\title{Profile plot (spaghetti plot) for longitudinal data}
+\title{Profile Plot (Spaghetti Plot) for Longitudinal Data}
 \usage{
 plot_profile(
   y,

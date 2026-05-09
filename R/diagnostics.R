@@ -16,7 +16,7 @@ if (getRversion() >= "2.15.1") {
 # PARTIAL CORRELATION MATRIX
 # ==============================================================================
 
-#' Compute intervenor-adjusted partial correlation matrix
+#' Compute Intervenor-Adjusted Partial Correlation Matrix
 #'
 #' Computes the partial correlation between `Y[i]` and `Y[j]` adjusting for the
 #' "intervenor" variables `Y[i+1], ..., Y[j-1]`. Under an antedependence model
@@ -114,14 +114,14 @@ partial_corr <- function(y, test = FALSE, n_digits = 3) {
 
                 # Conditional variance: Var(A|B) = Var(A) - Cov(A,B) Var(B)^{-1} Cov(B,A)
                 s_BB_inv <- tryCatch(
-                    solve(s_BB),
+                    chol2inv(chol(s_BB)),
                     error = function(e) {
                         warning("Singular intervenor covariance at lag ", i - j,
                                 "; using generalized inverse")
                         MASS::ginv(s_BB)
                     }
                 )
-                s_AA_B <- s_AA - s_AB %*% s_BB_inv %*% t(s_AB)
+                s_AA_B <- s_AA - tcrossprod(s_AB %*% s_BB_inv, s_AB)
 
                 # Partial correlation from conditional covariance
                 denom <- sqrt(s_AA_B[1, 1] * s_AA_B[2, 2])
@@ -192,6 +192,60 @@ print.partial_corr <- function(x, ...) {
     invisible(x)
 }
 
+#' @title Summary method for partial_corr objects
+#'
+#' @description Prints a lag-by-lag summary of intervenor-adjusted partial
+#'   correlations, reporting the mean and range at each lag together with the
+#'   number of pairs that exceed the rough significance threshold
+#'   \eqn{2/\sqrt{n}}.
+#'
+#' @param object A \code{partial_corr} object returned by
+#'   \code{\link{partial_corr}}.
+#' @param ... Currently unused.
+#'
+#' @return Invisibly returns a data frame with one row per lag containing
+#'   columns \code{lag}, \code{n_pairs}, \code{mean_abs}, \code{min}, and
+#'   \code{max}.
+#'
+#' @seealso \code{\link{partial_corr}}, \code{\link{plot.partial_corr}}
+#' @export
+summary.partial_corr <- function(object, ...) {
+    n <- object$n_time
+    PC <- object$partial_correlation
+    threshold <- 2 / sqrt(object$n_subjects)
+
+    lags <- seq_len(n - 1)
+    out <- data.frame(
+        lag       = lags,
+        n_pairs   = n - lags,
+        mean_abs  = NA_real_,
+        min       = NA_real_,
+        max       = NA_real_,
+        n_signif  = NA_integer_
+    )
+
+    for (k in lags) {
+        vals <- sapply(
+            seq(k + 1, n),
+            function(i) PC[i, i - k]
+        )
+        vals <- vals[is.finite(vals)]
+        if (length(vals) == 0) next
+        out$mean_abs[k] <- round(mean(abs(vals)), 3)
+        out$min[k]      <- round(min(vals), 3)
+        out$max[k]      <- round(max(vals), 3)
+        out$n_signif[k] <- sum(abs(vals) >= threshold)
+    }
+
+    cat("Partial Correlation Summary\n")
+    cat("  Subjects:", object$n_subjects,
+        "| Time points:", n, "\n")
+    cat("  Significance threshold (2/sqrt(n)):",
+        round(threshold, 3), "\n\n")
+    print(out, row.names = FALSE)
+    invisible(out)
+}
+
 
 # ==============================================================================
 # PRISM PLOTS
@@ -225,7 +279,7 @@ print.partial_corr <- function(x, ...) {
 }
 
 
-#' PRISM plot (Partial Residual Intervenor Scatterplot Matrix)
+#' PRISM Plot (Partial Residual Intervenor Scatterplot Matrix)
 #'
 #' Creates a matrix of scatterplots for diagnosing antedependence structure.
 #' The upper triangle shows ordinary scatterplots of `Y[i]` vs `Y[j]`.
@@ -363,7 +417,7 @@ plot_prism <- function(y,
 # PROFILE PLOTS
 # ==============================================================================
 
-#' Profile plot (spaghetti plot) for longitudinal data
+#' Profile Plot (Spaghetti Plot) for Longitudinal Data
 #'
 #' Creates a profile plot showing individual subject trajectories with
 #' overlaid mean trajectory and standard deviation bands.

@@ -2,7 +2,7 @@
 % Please edit documentation in R/ci_inad.R
 \name{ci_inad}
 \alias{ci_inad}
-\title{Confidence intervals for fitted INAD models}
+\title{Confidence Intervals for Fitted INAD Models}
 \usage{
 ci_inad(
   y,

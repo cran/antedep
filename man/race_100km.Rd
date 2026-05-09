@@ -3,7 +3,7 @@
 \docType{data}
 \name{race_100km}
 \alias{race_100km}
-\title{100km race split-time data}
+\title{100km Race Split-Time Data}
 \format{
 A list with five components:
 \describe{

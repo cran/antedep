@@ -2,7 +2,7 @@
 % Please edit documentation in R/simulate_cat.R
 \name{simulate_cat}
 \alias{simulate_cat}
-\title{Simulate categorical antedependence series}
+\title{Simulate Categorical Antedependence Series}
 \usage{
 simulate_cat(
   n_subjects,
@@ -40,8 +40,11 @@ If FALSE, marginal and transition should be lists indexed by block.}
 \item{seed}{Optional random seed for reproducibility.}
 }
 \value{
-Integer matrix with n_subjects rows and n_time columns, where each
-entry is a category code from 1 to c.
+An integer matrix of class \code{c("cat_sim", "matrix")} with
+\code{n_subjects} rows and \code{n_time} columns, where each entry is a
+category code from 1 to \code{n_categories}.  Use
+\code{\link[stats]{as.ts}(y)} (or \code{ts(t(y))}) to convert to an
+\code{mts} time-series object where rows correspond to time points.
 }
 \description{
 Generate simulated longitudinal categorical data from an AD(p) model with

@@ -2,7 +2,7 @@
 % Please edit documentation in R/diagnostics.R
 \name{partial_corr}
 \alias{partial_corr}
-\title{Compute intervenor-adjusted partial correlation matrix}
+\title{Compute Intervenor-Adjusted Partial Correlation Matrix}
 \usage{
 partial_corr(y, test = FALSE, n_digits = 3)
 }

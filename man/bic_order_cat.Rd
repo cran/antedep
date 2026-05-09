@@ -2,7 +2,7 @@
 % Please edit documentation in R/bic_cat.R
 \name{bic_order_cat}
 \alias{bic_order_cat}
-\title{BIC-based order selection for categorical AD models}
+\title{BIC-Based Order Selection for Categorical AD Models}
 \usage{
 bic_order_cat(
   y,

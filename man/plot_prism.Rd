@@ -2,7 +2,7 @@
 % Please edit documentation in R/diagnostics.R
 \name{plot_prism}
 \alias{plot_prism}
-\title{PRISM plot (Partial Residual Intervenor Scatterplot Matrix)}
+\title{PRISM Plot (Partial Residual Intervenor Scatterplot Matrix)}
 \usage{
 plot_prism(
   y,

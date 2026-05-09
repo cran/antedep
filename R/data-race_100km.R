@@ -1,4 +1,4 @@
-#' 100km race split-time data
+#' 100km Race Split-Time Data
 #'
 #' Split times (in minutes) from a 100km race example with 10 consecutive sections.
 #' This is continuous-response longitudinal data suitable for Gaussian AD modeling.

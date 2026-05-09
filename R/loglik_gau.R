@@ -1,4 +1,4 @@
-#' Log-likelihood for Gaussian AD models (with missing data support)
+#' Log-Likelihood for Gaussian AD Models
 #'
 #' Computes the log-likelihood for Gaussian antedependence models of order 0, 1, or 2.
 #' Supports missing data under MAR assumption via na_action parameter.

@@ -2,7 +2,7 @@
 % Please edit documentation in R/simulate_gau.R
 \name{simulate_gau}
 \alias{simulate_gau}
-\title{Simulate Gaussian antedependence series}
+\title{Simulate Gaussian Antedependence Series}
 \usage{
 simulate_gau(
   n_subjects,
@@ -41,7 +41,11 @@ number of blocks}
 \item{seed}{optional random seed for reproducibility}
 }
 \value{
-numeric matrix with dimension \code{n_subjects} by \code{n_time}
+A numeric matrix of class \code{c("gau_sim", "matrix")} with
+\code{n_subjects} rows and \code{n_time} columns.  Each row is one
+subject's simulated trajectory.  Use \code{\link[stats]{as.ts}(y)} (or
+\code{ts(t(y))}) to convert to an \code{mts} time-series object where
+rows correspond to time points.
 }
 \description{
 Generate longitudinal continuous data from a Gaussian antedependence (AD)

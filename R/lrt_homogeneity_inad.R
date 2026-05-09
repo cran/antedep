@@ -2,7 +2,7 @@
 # Likelihood ratio tests for homogeneity across groups in INAD models
 # Based on Section 3.7 of Li & Zimmerman (2026) Biostatistics
 
-#' Likelihood ratio test for homogeneity across groups (INAD data)
+#' Likelihood Ratio Test for Homogeneity Across Groups (INAD Data)
 #'
 #' Tests hypotheses about parameter equality across treatment or grouping
 #' factors in integer-valued antedependence models. Implements the homogeneity
@@ -103,7 +103,8 @@ test_homogeneity_inad <- function(y, blocks, order = 1,
                                   test = c("all", "mean", "dependence"),
                                   fit_pooled = NULL, fit_inadfe = NULL,
                                   fit_hetero = NULL, ...) {
-  
+  data_name <- deparse(substitute(y))
+
   # Validate inputs
   if (!is.matrix(y)) y <- as.matrix(y)
   y_obs <- y[!is.na(y)]
@@ -251,10 +252,21 @@ test_homogeneity_inad <- function(y, blocks, order = 1,
     stringsAsFactors = FALSE
   )
   
+  test_desc <- switch(test,
+    all        = paste0("Pooled vs Heterogeneous INAD(", order, ")"),
+    mean       = paste0("Pooled vs INADFE (mean homogeneity) order ", order),
+    dependence = paste0("INADFE vs Heterogeneous (dependence homogeneity) order ", order),
+    test
+  )
+
   # Assemble output
   result <- list(
-    method = "lrt",
-    statistic = lrt_stat,
+    statistic  = stats::setNames(lrt_stat, "chi-squared"),
+    parameter  = stats::setNames(df, "df"),
+    p.value    = p_value,
+    method     = paste0("LRT for INAD Homogeneity (", test_desc, ")"),
+    data.name  = data_name,
+    inference  = "lrt",
     lrt_stat = lrt_stat,
     df = df,
     p_value = p_value,
@@ -275,8 +287,8 @@ test_homogeneity_inad <- function(y, blocks, order = 1,
       group_sizes = as.integer(group_sizes)
     )
   )
-  
-  class(result) <- "test_homogeneity_inad"
+
+  class(result) <- c("test_homogeneity_inad", "htest")
   result
 }
 
@@ -397,7 +409,7 @@ test_homogeneity_inad <- function(y, blocks, order = 1,
 }
 
 
-#' Run all homogeneity tests for INAD
+#' Run All Homogeneity Tests for INAD
 #'
 #' Convenience function to run all three homogeneity tests at once and
 #' return a summary.
@@ -594,23 +606,22 @@ print.test_homogeneity_inad <- function(x, digits = 4, ...) {
 #' @return Invisibly returns \code{x}.
 #' @export
 print.homogeneity_tests_inad <- function(x, digits = 4, ...) {
-  cat("\nHomogeneity Tests for INAD Models\n")
-  cat("==================================\n\n")
-  
-  cat("Settings: Order", x$settings$order, ",", 
-      x$settings$thinning, "thinning,", x$settings$innovation, "innovations\n")
-  cat("Groups:", x$settings$n_blocks, "  N:", x$settings$n_subjects, 
+  cat("\nHomogeneity Tests for INAD Models\n\n")
+  cat(sprintf("Settings: Order %d, %s thinning, %s innovations\n",
+              x$settings$order, x$settings$thinning, x$settings$innovation))
+  cat("Groups:", x$settings$n_blocks, "  N:", x$settings$n_subjects,
       "  T:", x$settings$n_time, "\n\n")
-  
+
   cat("Model Comparison:\n")
   print(x$model_table, row.names = FALSE, digits = digits)
   cat("\n")
-  
+
   cat("Test Results:\n")
-  print(x$summary_table, row.names = FALSE, digits = digits)
+  cols_keep <- c("test", "statistic", "df", "p_value")
+  tbl <- x$summary_table[, cols_keep, drop = FALSE]
+  print(tbl, row.names = FALSE, digits = digits)
   cat("\n")
-  
+
   cat("Best model by BIC:", x$best_model_bic, "\n")
-  
   invisible(x)
 }

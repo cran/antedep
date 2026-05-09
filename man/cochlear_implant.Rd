@@ -3,7 +3,7 @@
 \docType{data}
 \name{cochlear_implant}
 \alias{cochlear_implant}
-\title{Cochlear implant speech recognition data}
+\title{Cochlear Implant Speech Recognition Data}
 \format{
 A list with six components:
 \describe{

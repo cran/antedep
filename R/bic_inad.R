@@ -1,34 +1,4 @@
-#' Bayesian information criterion for fitted INAD models
-#'
-#' Computes BIC using the fitted log likelihood and a parameter count that
-#' respects structural zeros and identifiability constraints.
-#'
-#' @param fit A fitted model object returned by \code{\link{fit_inad}}.
-#' @param n_subjects Number of subjects, typically \code{nrow(y)}. If
-#'   \code{NULL}, inferred from \code{fit$settings$n_subjects} or legacy
-#'   \code{length(fit$settings$blocks)} when available (with a warning).
-#'
-#' @return A numeric scalar BIC value.
-#'
-#' @details
-#' The BIC is computed as:
-#' \deqn{BIC = -2 \times \ell + k \times \log(N)}
-#' where \eqn{\ell} is the log-likelihood, \eqn{k} is the number of free parameters,
-#' and \eqn{N} is the number of subjects.
-#'
-#' @examples
-#' set.seed(1)
-#' y <- simulate_inad(
-#'   n_subjects = 40,
-#'   n_time = 5,
-#'   order = 1,
-#'   thinning = "binom",
-#'   innovation = "pois",
-#'   alpha = 0.3,
-#'   theta = 2
-#' )
-#' fit <- fit_inad(y, order = 1, thinning = "binom", innovation = "pois", max_iter = 20)
-#' bic_inad(fit, n_subjects = nrow(y))
+#' @rdname bic_gau
 #' @export
 bic_inad <- function(fit, n_subjects = NULL) {
     if (is.null(n_subjects)) {
@@ -49,34 +19,7 @@ bic_inad <- function(fit, n_subjects = NULL) {
     -2 * fit$log_l + k * log(n_subjects)
 }
 
-#' Akaike information criterion for fitted INAD models
-#'
-#' Computes AIC using the fitted log likelihood and a parameter count that
-#' respects structural zeros and identifiability constraints.
-#'
-#' @param fit A fitted model object returned by \code{\link{fit_inad}}.
-#'
-#' @return A numeric scalar AIC value.
-#'
-#' @details
-#' The AIC is computed as:
-#' \deqn{AIC = -2 \times \ell + 2k}
-#' where \eqn{\ell} is the log-likelihood and \eqn{k} is the number of free
-#' parameters.
-#'
-#' @examples
-#' set.seed(1)
-#' y <- simulate_inad(
-#'   n_subjects = 40,
-#'   n_time = 5,
-#'   order = 1,
-#'   thinning = "binom",
-#'   innovation = "pois",
-#'   alpha = 0.3,
-#'   theta = 2
-#' )
-#' fit <- fit_inad(y, order = 1, thinning = "binom", innovation = "pois", max_iter = 20)
-#' aic_inad(fit)
+#' @rdname bic_gau
 #' @export
 aic_inad <- function(fit) {
     k <- .count_params_inad_fit(fit)

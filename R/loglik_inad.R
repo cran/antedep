@@ -1,4 +1,4 @@
-#' Log-likelihood for INAD models (with missing data support)
+#' Log-Likelihood for INAD Models (with Missing Data Support)
 #'
 #' If blocks is NULL, this computes the log likelihood as the sum of per time
 #' contributions from logL_inad_i for computational convenience.
@@ -219,7 +219,7 @@ logL_inad <- function(
     loglik
 }
 
-#' INAD log likelihood contribution at time i (no fixed effect)
+#' INAD Log-Likelihood Contribution at Time i
 #'
 #' Returns the time i contribution, summed over subjects, for the no fixed effect model.
 #'

@@ -2,7 +2,7 @@
 % Please edit documentation in R/em_gau.R
 \name{em_gau}
 \alias{em_gau}
-\title{EM algorithm for Gaussian AD model estimation}
+\title{EM Algorithm for Gaussian AD Model Estimation}
 \usage{
 em_gau(
   y,

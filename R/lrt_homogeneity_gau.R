@@ -1,7 +1,7 @@
 # File: R/test_homogeneity_gau.R
 # Likelihood ratio test for homogeneity of covariance across groups (Section 6.4)
 
-#' Likelihood ratio test for homogeneity across groups (Gaussian AD data)
+#' Likelihood Ratio Test for Homogeneity Across Groups (Gaussian AD Data)
 #'
 #' Tests the null hypothesis that G groups have the same AD(p) covariance
 #' structure against the alternative that they have different AD(p) structures.
@@ -70,6 +70,7 @@
 #' @export
 test_homogeneity_gau <- function(y, blocks, p = 1L, use_modified = TRUE) {
 
+    data_name <- deparse(substitute(y))
     if (!is.matrix(y)) y <- as.matrix(y)
     if (any(!is.finite(y[!is.na(y)]))) stop("y must contain finite values")
 
@@ -281,19 +282,26 @@ test_homogeneity_gau <- function(y, blocks, p = 1L, use_modified = TRUE) {
     }
 
     out <- list(
-        method = "lrt",
-        statistic = statistic,
-        statistic_modified = statistic_modified,
-        df = df,
-        p_value = p_value,
+        # htest required slots
+        statistic  = stats::setNames(statistic, "chi-squared"),
+        parameter  = stats::setNames(df, "df"),
+        p.value    = p_value,
+        method     = paste0("LRT for Homogeneity of Gaussian AD(", p,
+                            ") Covariance Across ", G, " Groups"),
+        data.name  = data_name,
+        # additional slots
+        inference  = "lrt",
+        statistic_modified  = statistic_modified,
+        df         = df,
+        p_value    = p_value,
         p_value_modified = p_value_modified,
-        G = G,
+        G          = G,
         group_sizes = group_sizes,
-        order = p,
-        n_time = n_time
+        order      = p,
+        n_time     = n_time
     )
 
-    class(out) <- "gau_homogeneity_test"
+    class(out) <- c("gau_homogeneity_test", "htest")
     out
 }
 

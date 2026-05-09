@@ -2,7 +2,7 @@
 % Please edit documentation in R/lrt_stationarity_inad.R
 \name{test_stationarity_inad}
 \alias{test_stationarity_inad}
-\title{Likelihood ratio test for stationarity (INAD data)}
+\title{Likelihood Ratio Test for Stationarity (INAD Data)}
 \usage{
 test_stationarity_inad(
   y,
@@ -74,7 +74,7 @@ available in \code{\link{fit_inad}}. If \code{y} has missing values and
 \examples{
 set.seed(1)
 y <- simulate_inad(
-  n_subjects = 30,
+  n_subjects = 15,
   n_time = 5,
   order = 1,
   thinning = "binom",
@@ -88,7 +88,7 @@ out <- test_stationarity_inad(
   thinning = "binom",
   innovation = "pois",
   constrain = "both",
-  max_iter = 20
+  max_iter = 8
 )
 out$p_value
 }

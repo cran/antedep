@@ -538,9 +538,15 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <span id="cb13-12"><a href="#cb13-12" tabindex="-1"></a><span class="co">#&gt; cat_3 pi_t1_cat3    1        3     0.35 0.10665365 0.1409627 0.5590373  0.95</span></span></code></pre></div>
 <div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a><span class="co"># Order tests for CAT</span></span>
 <span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a><span class="fu">run_order_tests_cat</span>(y_cat, <span class="at">max_order =</span> <span class="dv">2</span>)<span class="sc">$</span>table</span>
-<span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a><span class="co">#&gt;       comparison order_null order_alt method lrt_stat df    p_value significant</span></span>
-<span id="cb14-4"><a href="#cb14-4" tabindex="-1"></a><span class="co">#&gt; 1 AD(0) vs AD(1)          0         1    lrt 13.04437 12 0.36582405       FALSE</span></span>
-<span id="cb14-5"><a href="#cb14-5" tabindex="-1"></a><span class="co">#&gt; 2 AD(1) vs AD(2)          1         2    lrt 37.28660 24 0.04096144        TRUE</span></span></code></pre></div>
+<span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a><span class="co">#&gt;       comparison order_null order_alt</span></span>
+<span id="cb14-4"><a href="#cb14-4" tabindex="-1"></a><span class="co">#&gt; 1 AD(0) vs AD(1)          0         1</span></span>
+<span id="cb14-5"><a href="#cb14-5" tabindex="-1"></a><span class="co">#&gt; 2 AD(1) vs AD(2)          1         2</span></span>
+<span id="cb14-6"><a href="#cb14-6" tabindex="-1"></a><span class="co">#&gt;                                                                    method</span></span>
+<span id="cb14-7"><a href="#cb14-7" tabindex="-1"></a><span class="co">#&gt; 1 Likelihood Ratio Test for Categorical AD Order (H0: AD(0) vs H1: AD(1))</span></span>
+<span id="cb14-8"><a href="#cb14-8" tabindex="-1"></a><span class="co">#&gt; 2 Likelihood Ratio Test for Categorical AD Order (H0: AD(1) vs H1: AD(2))</span></span>
+<span id="cb14-9"><a href="#cb14-9" tabindex="-1"></a><span class="co">#&gt;   lrt_stat df    p_value significant</span></span>
+<span id="cb14-10"><a href="#cb14-10" tabindex="-1"></a><span class="co">#&gt; 1 13.04437 12 0.36582405       FALSE</span></span>
+<span id="cb14-11"><a href="#cb14-11" tabindex="-1"></a><span class="co">#&gt; 2 37.28660 24 0.04096144        TRUE</span></span></code></pre></div>
 </div>
 <div id="missing-data-cat-fit" class="section level3">
 <h3>Missing-data CAT fit</h3>

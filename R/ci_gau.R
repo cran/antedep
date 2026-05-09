@@ -1,4 +1,4 @@
-#' Confidence intervals for fitted Gaussian AD models
+#' Confidence Intervals for Fitted Gaussian AD Models
 #'
 #' Computes approximate Wald confidence intervals for selected parameters from a
 #' fitted Gaussian AD model.

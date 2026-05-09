@@ -1,16 +1,18 @@
 # File: R/bic_gau.R
 
-#' Bayesian information criterion for fitted Gaussian AD models
+#' Bayesian and Akaike Information Criteria for Antedependence Fits
 #'
-#' Computes BIC using the fitted log likelihood and a parameter count that
-#' respects identifiability constraints for the Gaussian antedependence
-#' parameters.
+#' Compute BIC or AIC for a fitted Gaussian, categorical, or INAD
+#' antedependence model. Since `logLik()` methods are registered for all three
+#' fit classes, `stats::AIC()` and `stats::BIC()` generics also work directly
+#' and are preferred.
 #'
-#' @param fit A fitted model object returned by \code{\link{fit_gau}}.
+#' @param fit A fitted model object returned by \code{\link{fit_gau}},
+#'   \code{\link{fit_cat}}, or \code{\link{fit_inad}}.
 #' @param n_subjects Number of subjects, typically \code{nrow(y)}. If
 #'   \code{NULL}, inferred from \code{fit$settings$n_subjects}.
 #'
-#' @return A numeric scalar BIC value.
+#' @return A numeric scalar BIC or AIC value.
 #'
 #' @details
 #' The BIC is computed as:
@@ -18,15 +20,15 @@
 #' where \eqn{\ell} is the log-likelihood, \eqn{k} is the number of free parameters,
 #' and \eqn{N} is the number of subjects.
 #'
-#' This function applies to Gaussian AD fits from \code{\link{fit_gau}}.
-#' For categorical and INAD models, use \code{\link{bic_cat}} and
-#' \code{\link{bic_inad}}.
+#' The AIC is computed as:
+#' \deqn{AIC = -2 \times \ell + 2k}
 #'
 #' @examples
 #' set.seed(1)
 #' y <- simulate_gau(n_subjects = 30, n_time = 5, order = 1, phi = 0.3)
 #' fit <- fit_gau(y, order = 1)
 #' bic_gau(fit, n_subjects = nrow(y))
+#' aic_gau(fit)
 #' @export
 bic_gau <- function(fit, n_subjects = NULL) {
     if (is.null(n_subjects)) n_subjects <- fit$settings$n_subjects
@@ -38,29 +40,7 @@ bic_gau <- function(fit, n_subjects = NULL) {
     -2 * fit$log_l + k * log(n_subjects)
 }
 
-#' Akaike information criterion for fitted Gaussian AD models
-#'
-#' Computes AIC using the fitted log likelihood and a parameter count that
-#' respects identifiability constraints for the Gaussian antedependence
-#' parameters.
-#'
-#' @param fit A fitted model object returned by \code{\link{fit_gau}}.
-#'
-#' @return A numeric scalar AIC value.
-#'
-#' @details
-#' The AIC is computed as:
-#' \deqn{AIC = -2 \times \ell + 2k}
-#' where \eqn{\ell} is the log-likelihood and \eqn{k} is the number of free
-#' parameters.
-#'
-#' This function applies to Gaussian AD fits from \code{\link{fit_gau}}.
-#'
-#' @examples
-#' set.seed(1)
-#' y <- simulate_gau(n_subjects = 30, n_time = 5, order = 1, phi = 0.3)
-#' fit <- fit_gau(y, order = 1)
-#' aic_gau(fit)
+#' @rdname bic_gau
 #' @export
 aic_gau <- function(fit) {
     k <- .count_params_gau_fit(fit)

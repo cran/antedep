@@ -1,7 +1,7 @@
 # File: R/test_order_gau.R
 # Likelihood ratio tests for the order of antedependence (Chapter 6.2)
 
-#' Likelihood ratio test for antedependence order (Gaussian AD data)
+#' Likelihood Ratio Test for Antedependence Order (Gaussian AD Data)
 #'
 #' Tests the null hypothesis that the data follow an AD(p) model against the
 #' alternative that they follow an AD(p+q) model, using the likelihood ratio
@@ -72,6 +72,7 @@
 test_order_gau <- function(y, p = 0L, q = 1L, mu = NULL, use_modified = TRUE,
                            order_null = NULL, order_alt = NULL) {
 
+    data_name <- deparse(substitute(y))
     if (!is.matrix(y)) y <- as.matrix(y)
     if (anyNA(y)) {
         stop(
@@ -179,26 +180,33 @@ test_order_gau <- function(y, p = 0L, q = 1L, mu = NULL, use_modified = TRUE,
     }
 
     out <- list(
-        method = "lrt",
+        # htest required slots
+        statistic  = stats::setNames(statistic, "chi-squared"),
+        parameter  = stats::setNames(df, "df"),
+        p.value    = p_value,
+        method     = paste0("Likelihood Ratio Test for Gaussian AD Order (H0: AD(",
+                            p, ") vs H1: AD(", p + q, "))"),
+        data.name  = data_name,
+        # additional slots
+        inference  = "lrt",
         p = p,
         q = q,
         order_null = p,
-        order_alt = p + q,
-        statistic = statistic,
-        statistic_modified = statistic_modified,
-        df = df,
-        p_value = p_value,
+        order_alt  = p + q,
+        statistic_modified  = statistic_modified,
+        df         = df,
+        p_value    = p_value,          # backward-compatible alias
         p_value_modified = p_value_modified,
         n_subjects = n,
-        n_time = n_time
+        n_time     = n_time
     )
 
-    class(out) <- "gau_order_test"
+    class(out) <- c("gau_order_test", "htest")
     out
 }
 
 
-#' BIC-based order selection for Gaussian AD models
+#' BIC-Based Order Selection for Gaussian AD Models
 #'
 #' Fits AD models of increasing orders and selects the best by BIC.
 #'
@@ -247,7 +255,7 @@ bic_order_gau <- function(y, max_order = 2L, ...) {
     names(fits) <- paste0("order", 0:max_order)
     names(bic_vals) <- paste0("order", 0:max_order)
 
-    best_order <- which.min(bic_vals) - 1L
+    best_order <- unname(which.min(bic_vals) - 1L)
 
     tbl <- data.frame(
         order = 0:max_order,
@@ -275,23 +283,19 @@ bic_order_gau <- function(y, max_order = 2L, ...) {
 #' @return Invisibly returns \code{x}.
 #' @export
 print.gau_order_test <- function(x, ...) {
-    cat("Order Test for Antedependence\n")
-    cat("==================================================\n\n")
-
-    cat("H0: AD(", x$p, ")\n", sep = "")
-    cat("H1: AD(", x$p + x$q, ")\n\n", sep = "")
-
+    cat("Order Test for Antedependence\n\n")
+    cat("H0: AD(", x$p, ")   H1: AD(", x$p + x$q, ")\n", sep = "")
     cat("Sample size: n =", x$n_subjects, "subjects,", x$n_time, "time points\n\n")
 
     cat("Standard statistic (LRT):\n")
-    cat("  Statistic:", round(x$statistic, 4), "\n")
-    cat("  df:", x$df, "\n")
-    cat("  p-value:", format.pval(x$p_value, digits = 4), "\n")
+    cat("  Statistic:", round(x$statistic, 3),
+        " df:", x$df,
+        " p-value:", format.pval(x$p_value, digits = 4), "\n")
 
     if (!is.null(x$statistic_modified)) {
         cat("\nModified LRT (Kenward correction):\n")
-        cat("  Statistic:", round(x$statistic_modified, 4), "\n")
-        cat("  p-value:", format.pval(x$p_value_modified, digits = 4), "\n")
+        cat("  Statistic:", round(x$statistic_modified, 3),
+            " p-value:", format.pval(x$p_value_modified, digits = 4), "\n")
     }
 
     invisible(x)

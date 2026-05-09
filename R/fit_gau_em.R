@@ -129,7 +129,7 @@
     )
   )
   
-  class(result) <- c("gau_fit", "list")
+  class(result) <- "gau_fit"
   result
 }
 
@@ -261,15 +261,15 @@
       
       # Conditional mean: E[Y_mis | Y_obs]
       Sigma_obs_inv <- tryCatch(
-        solve(Sigma_obs),
+        chol2inv(chol(Sigma_obs)),
         error = function(e) {
           solve(Sigma_obs + diag(1e-8, nrow(Sigma_obs)))
         }
       )
       E_mis <- mu_mis + Sigma_cross %*% Sigma_obs_inv %*% (y_obs - mu_obs)
-      
+
       # Conditional covariance: Var[Y_mis | Y_obs]
-      Var_mis <- Sigma_mis - Sigma_cross %*% Sigma_obs_inv %*% t(Sigma_cross)
+      Var_mis <- Sigma_mis - tcrossprod(Sigma_cross %*% Sigma_obs_inv, Sigma_cross)
       Var_mis <- 0.5 * (Var_mis + t(Var_mis))
       
       # Impute missing values
@@ -369,8 +369,8 @@
       rhs <- c(S2_centered[t, t - 1], S2_centered[t, t - 2])
 
       beta <- tryCatch(
-        solve(G, rhs),
-        error = function(e) solve(G + diag(eps, 2), rhs)
+        chol2inv(chol(G)) %*% rhs,
+        error = function(e) chol2inv(chol(G + diag(eps, 2))) %*% rhs
       )
 
       phi[, t] <- as.numeric(beta)

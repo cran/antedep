@@ -1,4 +1,4 @@
-#' Simulate Gaussian antedependence series
+#' Simulate Gaussian Antedependence Series
 #'
 #' Generate longitudinal continuous data from a Gaussian antedependence (AD)
 #' model of order 0, 1, or 2 using a conditional regression on predecessors.
@@ -32,7 +32,11 @@
 #'   number of blocks
 #' @param seed optional random seed for reproducibility
 #'
-#' @return numeric matrix with dimension `n_subjects` by `n_time`
+#' @return A numeric matrix of class \code{c("gau_sim", "matrix")} with
+#'   \code{n_subjects} rows and \code{n_time} columns.  Each row is one
+#'   subject's simulated trajectory.  Use \code{\link[stats]{as.ts}(y)} (or
+#'   \code{ts(t(y))}) to convert to an \code{mts} time-series object where
+#'   rows correspond to time points.
 #'
 #' @examples
 #' y <- simulate_gau(
@@ -173,6 +177,7 @@ simulate_gau <- function(n_subjects,
                 y[, t] <- m_at(t) + stats::rnorm(n_subjects, mean = 0, sd = sigma[t])
             }
         }
+        class(y) <- c("gau_sim", "matrix")
         return(y)
     }
 
@@ -186,6 +191,7 @@ simulate_gau <- function(n_subjects,
                     stats::rnorm(n_subjects, mean = 0, sd = sigma[t])
             }
         }
+        class(y) <- c("gau_sim", "matrix")
         return(y)
     }
 
@@ -210,5 +216,6 @@ simulate_gau <- function(n_subjects,
         }
     }
 
+    class(y) <- c("gau_sim", "matrix")
     y
 }

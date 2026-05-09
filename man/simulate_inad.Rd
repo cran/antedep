@@ -2,7 +2,7 @@
 % Please edit documentation in R/simulate_inad.R
 \name{simulate_inad}
 \alias{simulate_inad}
-\title{Simulate INAD antedependence series}
+\title{Simulate INAD Antedependence Series}
 \usage{
 simulate_inad(
   n_subjects,
@@ -54,7 +54,11 @@ number of blocks}
 \item{seed}{optional random seed for reproducibility}
 }
 \value{
-integer matrix of counts with dimension \code{n_subjects} by \code{n_time}
+An integer matrix of class \code{c("inad_sim", "matrix")} with
+\code{n_subjects} rows and \code{n_time} columns.  Each row is one
+subject's simulated count trajectory.  Use
+\code{\link[stats]{as.ts}(y)} (or \code{ts(t(y))}) to convert to an
+\code{mts} time-series object where rows correspond to time points.
 }
 \description{
 Generate longitudinal count data from an INAD model using a thinning

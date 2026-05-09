@@ -2,7 +2,7 @@
 % Please edit documentation in R/lrt_mean_gau.R
 \name{test_two_sample_gau}
 \alias{test_two_sample_gau}
-\title{Two-sample test for equality of mean profiles under antedependence}
+\title{Two-Sample Test for Mean Structure Under Antedependence}
 \usage{
 test_two_sample_gau(y, blocks, p = 1L, order = NULL, use_modified = TRUE)
 }

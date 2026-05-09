@@ -2,7 +2,7 @@
 % Please edit documentation in R/lrt_homogeneity_cat.R
 \name{test_homogeneity_cat}
 \alias{test_homogeneity_cat}
-\title{Likelihood ratio test for homogeneity across groups (categorical AD data)}
+\title{Likelihood Ratio Test for Homogeneity Across Groups (Categorical AD Data)}
 \usage{
 test_homogeneity_cat(
   y = NULL,

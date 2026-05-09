@@ -2,7 +2,7 @@
 % Please edit documentation in R/lrt_homogeneity_cat.R
 \name{test_timeinvariance_cat}
 \alias{test_timeinvariance_cat}
-\title{Likelihood ratio test for time-invariance (categorical data)}
+\title{Likelihood Ratio Test for Time-Invariance (Categorical Data)}
 \usage{
 test_timeinvariance_cat(
   y,

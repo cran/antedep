@@ -1,4 +1,4 @@
-#' Cochlear implant speech recognition data
+#' Cochlear Implant Speech Recognition Data
 #'
 #' Longitudinal speech recognition outcomes for two groups (A/B), including
 #' incomplete records, from Zimmerman and Nunez-Anton antedependence book

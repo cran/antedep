@@ -422,6 +422,36 @@
 }
 
 
+#' Summary method for cat_fit objects
+#'
+#' @param object A \code{cat_fit} object.
+#' @param ... Unused.
+#' @return \code{object}, invisibly.
+#' @export
+summary.cat_fit <- function(object, ...) {
+    cat("Categorical Antedependence Model -- Summary\n")
+    cat("===========================================\n\n")
+    cat(sprintf("  Order            : %d\n", object$settings$order))
+    cat(sprintf("  Categories       : %d\n", object$settings$n_categories))
+    cat(sprintf("  Subjects (n)     : %d\n", object$settings$n_subjects))
+    cat(sprintf("  Time points (T)  : %d\n", object$settings$n_time))
+    cat(sprintf("  Parameters       : %d\n", object$n_params))
+    if (!is.null(object$n_missing))
+        cat(sprintf("  Missing values   : %d (%.1f%%)\n",
+                    object$n_missing, object$pct_missing))
+    if (!is.null(object$settings$blocks) && !object$settings$homogeneous)
+        cat(sprintf("  Groups           : %d (heterogeneous)\n",
+                    length(unique(object$settings$blocks))))
+    cat("\nFit statistics:\n")
+    cat(sprintf("  Log-likelihood   : %.4f\n", object$log_l))
+    cat(sprintf("  AIC              : %.4f\n", stats::AIC(object)))
+    cat(sprintf("  BIC              : %.4f\n", stats::BIC(object)))
+    cat("\nMarginal probabilities (first time point):\n")
+    if (!is.null(object$marginal[["t1"]]))
+        print(round(as.numeric(object$marginal[["t1"]]), 4))
+    invisible(object)
+}
+
 #' Print method for cat_fit objects
 #'
 #' @param x A cat_fit object

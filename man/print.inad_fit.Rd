@@ -2,7 +2,7 @@
 % Please edit documentation in R/em_inad.R
 \name{print.inad_fit}
 \alias{print.inad_fit}
-\title{Print method for INAD model fits}
+\title{Print Method for INAD Model Fits}
 \usage{
 \method{print}{inad_fit}(x, digits = 4, ...)
 }
@@ -17,5 +17,5 @@
 The input object, invisibly.
 }
 \description{
-Print method for INAD model fits
+Print Method for INAD Model Fits
 }

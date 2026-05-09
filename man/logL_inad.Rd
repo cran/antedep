@@ -2,7 +2,7 @@
 % Please edit documentation in R/loglik_inad.R
 \name{logL_inad}
 \alias{logL_inad}
-\title{Log-likelihood for INAD models (with missing data support)}
+\title{Log-Likelihood for INAD Models (with Missing Data Support)}
 \usage{
 logL_inad(
   y,

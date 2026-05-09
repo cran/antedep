@@ -2,7 +2,7 @@
 % Please edit documentation in R/lrt_stationarity_gau.R
 \name{run_stationarity_tests_gau}
 \alias{run_stationarity_tests_gau}
-\title{Run all stationarity-related tests for Gaussian AD}
+\title{Run All Stationarity-Related Tests for Gaussian AD}
 \usage{
 run_stationarity_tests_gau(
   y,

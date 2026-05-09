@@ -1,4 +1,4 @@
-#' Likelihood ratio test for stationarity (INAD data)
+#' Likelihood Ratio Test for Stationarity (INAD Data)
 #'
 #' Tests whether time-varying INAD parameters can be constrained to be constant
 #' over time.
@@ -56,7 +56,7 @@
 #' @examples
 #' set.seed(1)
 #' y <- simulate_inad(
-#'   n_subjects = 30,
+#'   n_subjects = 15,
 #'   n_time = 5,
 #'   order = 1,
 #'   thinning = "binom",
@@ -70,13 +70,14 @@
 #'   thinning = "binom",
 #'   innovation = "pois",
 #'   constrain = "both",
-#'   max_iter = 20
+#'   max_iter = 8
 #' )
 #' out$p_value
 #' @export
 test_stationarity_inad <- function(y, order = 1, thinning = "binom", innovation = "pois",
                                   blocks = NULL, constrain = "both",
                                   fit_unconstrained = NULL, verbose = FALSE, ...) {
+  data_name <- deparse(substitute(y))
   if (!is.matrix(y)) y <- as.matrix(y)
   y_obs <- y[!is.na(y)]
   if (any(y_obs < 0) || any(y_obs != floor(y_obs))) stop("y must contain non-negative integers")
@@ -127,15 +128,22 @@ test_stationarity_inad <- function(y, order = 1, thinning = "binom", innovation 
                       n_params = c(.count_params_inad(order, n_time, n_blocks, thinning, innovation), n_params_con),
                       BIC = c(bic_uncon, bic_con), stringsAsFactors = FALSE)
   
-  result <- list(method = "lrt", fit_unconstrained = fit_unconstrained, fit_constrained = fit_constrained,
-                 constraint = constraint_info$description, statistic = lrt_stat, lrt_stat = lrt_stat, df = df, p_value = p_value,
-                 bic_unconstrained = bic_uncon, bic_constrained = bic_con, bic_selected = bic_selected,
-                 estimates = list(unconstrained = list(alpha = fit_unconstrained$alpha, theta = fit_unconstrained$theta, tau = fit_unconstrained$tau),
-                                  constrained = list(alpha = fit_constrained$alpha, theta = fit_constrained$theta, tau = fit_constrained$tau)),
-                 table = table, settings = list(order = order, thinning = thinning, innovation = innovation,
-                                                n_subjects = n_subjects, n_time = n_time, n_blocks = n_blocks, constrain = constrain,
-                                                na_action = na_action_inference))
-  class(result) <- "test_stationarity_inad"
+  result <- list(
+    statistic  = stats::setNames(lrt_stat, "chi-squared"),
+    parameter  = stats::setNames(df, "df"),
+    p.value    = p_value,
+    method     = paste0("LRT for INAD Stationarity (", constraint_info$description, ")"),
+    data.name  = data_name,
+    inference  = "lrt",
+    fit_unconstrained = fit_unconstrained, fit_constrained = fit_constrained,
+    constraint = constraint_info$description, lrt_stat = lrt_stat, df = df, p_value = p_value,
+    bic_unconstrained = bic_uncon, bic_constrained = bic_con, bic_selected = bic_selected,
+    estimates = list(unconstrained = list(alpha = fit_unconstrained$alpha, theta = fit_unconstrained$theta, tau = fit_unconstrained$tau),
+                     constrained = list(alpha = fit_constrained$alpha, theta = fit_constrained$theta, tau = fit_constrained$tau)),
+    table = table, settings = list(order = order, thinning = thinning, innovation = innovation,
+                                   n_subjects = n_subjects, n_time = n_time, n_blocks = n_blocks, constrain = constrain,
+                                   na_action = na_action_inference))
+  class(result) <- c("test_stationarity_inad", "htest")
   result
 }
 
@@ -292,7 +300,7 @@ print.test_stationarity_inad <- function(x, digits = 4, ...) {
   }
 }
 
-#' Run all stationarity-related tests for INAD
+#' Run All Stationarity-Related Tests for INAD
 #' @param y Integer matrix.
 #' @param order Model order (1 or 2).
 #' @param thinning Thinning operator.
@@ -305,7 +313,7 @@ print.test_stationarity_inad <- function(x, digits = 4, ...) {
 #' @examples
 #' set.seed(1)
 #' y <- simulate_inad(
-#'   n_subjects = 25,
+#'   n_subjects = 15,
 #'   n_time = 5,
 #'   order = 1,
 #'   thinning = "binom",
@@ -319,7 +327,7 @@ print.test_stationarity_inad <- function(x, digits = 4, ...) {
 #'   thinning = "binom",
 #'   innovation = "pois",
 #'   verbose = FALSE,
-#'   max_iter = 15
+#'   max_iter = 8
 #' )
 #' out$summary
 #' @export
@@ -346,12 +354,13 @@ run_stationarity_tests_inad <- function(y, order = 1, thinning = "binom", innova
     if (verbose) cat("Testing:", test, "constant...\n")
     results[[test]] <- test_stationarity_inad(y, order, thinning, innovation, blocks, test, fit_uncon, FALSE, ...)
   }
-  summary_table <- data.frame(constraint = tests, method = sapply(results, function(r) r$method),
+  summary_table <- data.frame(constraint = tests,
                               statistic = sapply(results, function(r) r$statistic),
                               df = sapply(results, function(r) r$df),
                               LRT = sapply(results, function(r) r$lrt_stat),
                               p_value = sapply(results, function(r) r$p_value),
-                              BIC_selected = sapply(results, function(r) r$bic_selected), stringsAsFactors = FALSE)
+                              BIC_selected = sapply(results, function(r) r$bic_selected),
+                              stringsAsFactors = FALSE, row.names = NULL)
   output <- list(method = "lrt", fit_unconstrained = fit_uncon, tests = results, summary = summary_table,
                  settings = list(order = order, thinning = thinning, innovation = innovation,
                                  n_subjects = n_subjects, n_time = ncol(y)))
@@ -361,7 +370,9 @@ run_stationarity_tests_inad <- function(y, order = 1, thinning = "binom", innova
 
 #' @export
 print.stationarity_tests_inad <- function(x, digits = 4, ...) {
-  cat("\nStationarity Tests for INAD Model\n==================================\n\n")
-  print(x$summary, row.names = FALSE, digits = digits)
+  cat("\nStationarity Tests for INAD Model\n\n")
+  tbl <- x$summary
+  tbl$p_value <- format.pval(tbl$p_value, digits = 4)
+  print(tbl, row.names = FALSE, digits = digits)
   invisible(x)
 }

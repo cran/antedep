@@ -1,4 +1,4 @@
-#' Simulate INAD antedependence series
+#' Simulate INAD Antedependence Series
 #'
 #' Generate longitudinal count data from an INAD model using a thinning
 #' operator and an innovation distribution.
@@ -37,7 +37,11 @@
 #'   number of blocks
 #' @param seed optional random seed for reproducibility
 #'
-#' @return integer matrix of counts with dimension `n_subjects` by `n_time`
+#' @return An integer matrix of class \code{c("inad_sim", "matrix")} with
+#'   \code{n_subjects} rows and \code{n_time} columns.  Each row is one
+#'   subject's simulated count trajectory.  Use
+#'   \code{\link[stats]{as.ts}(y)} (or \code{ts(t(y))}) to convert to an
+#'   \code{mts} time-series object where rows correspond to time points.
 #'
 #' @examples
 #' y <- simulate_inad(
@@ -243,6 +247,7 @@ simulate_inad <- function(n_subjects,
         for (t in seq_len(n_time)) {
             y[, t] <- as.integer(draw_innovation(t))
         }
+        class(y) <- c("inad_sim", "matrix")
         return(y)
     }
 
@@ -302,5 +307,6 @@ simulate_inad <- function(n_subjects,
         }
     }
 
+    class(y) <- c("inad_sim", "matrix")
     y
 }

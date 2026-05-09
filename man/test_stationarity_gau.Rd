@@ -2,7 +2,7 @@
 % Please edit documentation in R/lrt_stationarity_gau.R
 \name{test_stationarity_gau}
 \alias{test_stationarity_gau}
-\title{Likelihood ratio test for stationarity (Gaussian AD data)}
+\title{Likelihood Ratio Test for Stationarity (Gaussian AD Data)}
 \usage{
 test_stationarity_gau(
   y,

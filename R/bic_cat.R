@@ -1,34 +1,6 @@
 # bic_cat.R - BIC computation for categorical antedependence models
 
-#' Bayesian information criterion for fitted categorical AD models
-#'
-#' Computes BIC using the fitted log likelihood and a parameter count for
-#' categorical antedependence parameters.
-#'
-#' @param fit A fitted model object of class \code{"cat_fit"} returned by
-#'   \code{\link{fit_cat}}.
-#' @param n_subjects Number of subjects. If NULL, extracted from fit.
-#'
-#' @return A numeric scalar BIC value.
-#'
-#' @details
-#' The BIC is computed as:
-#' \deqn{BIC = -2 \times \ell + k \times \log(N)}
-#' where \eqn{\ell} is the log-likelihood, \eqn{k} is the number of free parameters,
-#' and \eqn{N} is the number of subjects.
-#'
-#' @examples
-#' set.seed(1)
-#' y <- simulate_cat(40, 5, order = 1, n_categories = 2)
-#'
-#' # Fit models of different orders
-#' fit0 <- fit_cat(y, order = 0)
-#' fit1 <- fit_cat(y, order = 1)
-#' fit2 <- fit_cat(y, order = 2)
-#'
-#' # Compare BIC
-#' c(BIC_0 = bic_cat(fit0), BIC_1 = bic_cat(fit1), BIC_2 = bic_cat(fit2))
-#'
+#' @rdname bic_gau
 #' @export
 bic_cat <- function(fit, n_subjects = NULL) {
   if (!inherits(fit, "cat_fit")) {
@@ -48,28 +20,7 @@ bic_cat <- function(fit, n_subjects = NULL) {
 }
 
 
-#' Akaike information criterion for fitted categorical AD models
-#'
-#' Computes AIC using the fitted log likelihood and a parameter count for
-#' categorical antedependence parameters.
-#'
-#' @param fit A fitted model object of class \code{"cat_fit"} returned by
-#'   \code{\link{fit_cat}}.
-#'
-#' @return A numeric scalar AIC value.
-#'
-#' @details
-#' The AIC is computed as:
-#' \deqn{AIC = -2 \times \ell + 2k}
-#' where \eqn{\ell} is the log-likelihood and \eqn{k} is the number of free
-#' parameters.
-#'
-#' @examples
-#' set.seed(1)
-#' y <- simulate_cat(40, 5, order = 1, n_categories = 2)
-#' fit <- fit_cat(y, order = 1)
-#' aic_cat(fit)
-#'
+#' @rdname bic_gau
 #' @export
 aic_cat <- function(fit) {
   if (!inherits(fit, "cat_fit")) {
@@ -81,7 +32,7 @@ aic_cat <- function(fit) {
 }
 
 
-#' BIC-based order selection for categorical AD models
+#' BIC-Based Order Selection for Categorical AD Models
 #'
 #' Fits AD models of increasing orders and selects the best by BIC.
 #'

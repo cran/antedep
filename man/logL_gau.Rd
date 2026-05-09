@@ -2,7 +2,7 @@
 % Please edit documentation in R/loglik_gau.R
 \name{logL_gau}
 \alias{logL_gau}
-\title{Log-likelihood for Gaussian AD models (with missing data support)}
+\title{Log-Likelihood for Gaussian AD Models}
 \usage{
 logL_gau(
   y,

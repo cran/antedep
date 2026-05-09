@@ -1,7 +1,7 @@
 # File: R/lrt_mean_gau.R
 # Likelihood ratio tests for the mean structure (Chapter 7)
 
-#' One-sample test for mean structure under antedependence
+#' One-Sample Test for Mean Structure Under Antedependence
 #'
 #' Tests the null hypothesis that the mean vector equals a specified value
 #' mu = mu_0 against the alternative mu != mu_0, under an AD(p) covariance
@@ -65,6 +65,7 @@
 #' @export
 test_one_sample_gau <- function(y, mu0, p = 1L, order = NULL, use_modified = TRUE) {
 
+    data_name <- deparse(substitute(y))
     if (!is.matrix(y)) y <- as.matrix(y)
     if (anyNA(y)) {
         stop(
@@ -136,26 +137,32 @@ test_one_sample_gau <- function(y, mu0, p = 1L, order = NULL, use_modified = TRU
     }
 
     out <- list(
-        method = "lrt",
-        test_type = "one-sample",
-        mu0 = mu0,
-        mu_hat = mu_hat,
-        statistic = statistic,
-        statistic_modified = statistic_modified,
-        df = df,
-        p_value = p_value,
+        # htest required slots
+        statistic  = stats::setNames(statistic, "chi-squared"),
+        parameter  = stats::setNames(df, "df"),
+        p.value    = p_value,
+        method     = paste0("One-Sample LRT for Gaussian Mean under AD(", p, ")"),
+        data.name  = data_name,
+        # additional slots
+        inference  = "lrt",
+        test_type  = "one-sample",
+        mu0        = mu0,
+        mu_hat     = mu_hat,
+        statistic_modified  = statistic_modified,
+        df         = df,
+        p_value    = p_value,
         p_value_modified = p_value_modified,
-        order = p,
+        order      = p,
         n_subjects = n,
-        n_time = n_time
+        n_time     = n_time
     )
 
-    class(out) <- "gau_mean_test"
+    class(out) <- c("gau_mean_test", "htest")
     out
 }
 
 
-#' Two-sample test for equality of mean profiles under antedependence
+#' Two-Sample Test for Mean Structure Under Antedependence
 #'
 #' Tests the null hypothesis that two groups have equal mean profiles
 #' mu_1 = mu_2 against the alternative mu_1 != mu_2, assuming a common
@@ -218,6 +225,7 @@ test_one_sample_gau <- function(y, mu0, p = 1L, order = NULL, use_modified = TRU
 #' @export
 test_two_sample_gau <- function(y, blocks, p = 1L, order = NULL, use_modified = TRUE) {
 
+    data_name <- deparse(substitute(y))
     if (!is.matrix(y)) y <- as.matrix(y)
     if (anyNA(y)) {
         stop(
@@ -315,29 +323,35 @@ test_two_sample_gau <- function(y, blocks, p = 1L, order = NULL, use_modified = 
     }
 
     out <- list(
-        method = "lrt",
-        test_type = "two-sample",
-        mu1_hat = mu1_hat,
-        mu2_hat = mu2_hat,
-        mu_pooled = mu_pooled,
-        statistic = statistic,
-        statistic_modified = statistic_modified,
-        df = df,
-        p_value = p_value,
+        # htest required slots
+        statistic  = stats::setNames(statistic, "chi-squared"),
+        parameter  = stats::setNames(df, "df"),
+        p.value    = p_value,
+        method     = paste0("Two-Sample LRT for Gaussian Mean Profiles under AD(", p, ")"),
+        data.name  = data_name,
+        # additional slots
+        inference  = "lrt",
+        test_type  = "two-sample",
+        mu1_hat    = mu1_hat,
+        mu2_hat    = mu2_hat,
+        mu_pooled  = mu_pooled,
+        statistic_modified  = statistic_modified,
+        df         = df,
+        p_value    = p_value,
         p_value_modified = p_value_modified,
-        order = p,
+        order      = p,
         n_subjects = n,
-        n1 = n1,
-        n2 = n2,
-        n_time = n_time
+        n1         = n1,
+        n2         = n2,
+        n_time     = n_time
     )
 
-    class(out) <- "gau_mean_test"
+    class(out) <- c("gau_mean_test", "htest")
     out
 }
 
 
-#' Test linear hypotheses on the mean under antedependence
+#' Test Linear Hypotheses on the Mean Under Antedependence
 #'
 #' Tests the null hypothesis C * mu = c for a specified contrast matrix C
 #' and vector c, under an AD(p) covariance structure. This implements
@@ -398,6 +412,7 @@ test_two_sample_gau <- function(y, blocks, p = 1L, order = NULL, use_modified = 
 #' @export
 test_contrast_gau <- function(y, C, c = NULL, p = 1L) {
 
+    data_name <- deparse(substitute(y))
     if (!is.matrix(y)) y <- as.matrix(y)
     if (!is.matrix(C)) C <- as.matrix(C)
     if (anyNA(y)) {
@@ -442,9 +457,9 @@ test_contrast_gau <- function(y, C, c = NULL, p = 1L) {
     diff <- contrast_est - c
 
     # (C Sigma C')^{-1}
-    CSigmaC <- C %*% Sigma_hat %*% t(C)
+    CSigmaC <- tcrossprod(C %*% Sigma_hat, C)
     CSigmaC_inv <- tryCatch(
-        solve(CSigmaC),
+        chol2inv(chol(CSigmaC)),
         error = function(e) {
             warning("Singular contrast covariance matrix")
             NULL
@@ -456,23 +471,29 @@ test_contrast_gau <- function(y, C, c = NULL, p = 1L) {
         p_value <- NA
     } else {
         # Wald statistic: N * diff' (C Sigma C')^{-1} diff
-        statistic <- n * as.numeric(t(diff) %*% CSigmaC_inv %*% diff)
+        statistic <- n * drop(crossprod(diff, CSigmaC_inv %*% diff))
         p_value <- stats::pchisq(statistic, df = n_contrasts, lower.tail = FALSE)
     }
 
     out <- list(
-        method = "wald",
-        C = C,
-        c = c,
-        mu_hat = mu_hat,
+        # htest required slots
+        statistic    = stats::setNames(statistic, "chi-squared"),
+        parameter    = stats::setNames(n_contrasts, "df"),
+        p.value      = p_value,
+        method       = paste0("Wald Test for Linear Contrasts under AD(", p, ")"),
+        data.name    = data_name,
+        # additional slots
+        inference    = "wald",
+        C            = C,
+        c            = c,
+        mu_hat       = mu_hat,
         contrast_est = contrast_est,
-        statistic = statistic,
-        df = n_contrasts,
-        p_value = p_value,
-        order = p
+        df           = n_contrasts,
+        p_value      = p_value,
+        order        = p
     )
 
-    class(out) <- "gau_contrast_test"
+    class(out) <- c("gau_contrast_test", "htest")
     out
 }
 
@@ -517,9 +538,9 @@ test_contrast_gau <- function(y, C, c = NULL, p = 1L) {
         }
     }
 
-    # Sigma = T^{-1} D T^{-T}
-    T_inv <- solve(T_mat)
-    Sigma <- T_inv %*% diag(D_vec) %*% t(T_inv)
+    # Sigma = T^{-1} D T^{-T}  (T is unit lower-triangular)
+    T_inv <- forwardsolve(T_mat, diag(nrow(T_mat)))
+    Sigma <- tcrossprod(T_inv %*% diag(D_vec), T_inv)
 
     Sigma
 }

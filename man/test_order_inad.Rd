@@ -2,7 +2,7 @@
 % Please edit documentation in R/lrt_order_inad.R
 \name{test_order_inad}
 \alias{test_order_inad}
-\title{Likelihood ratio test for antedependence order (INAD data)}
+\title{Likelihood Ratio Test for Antedependence Order (INAD Data)}
 \usage{
 test_order_inad(
   y,
@@ -82,7 +82,7 @@ available in \code{\link{fit_inad}}. If \code{y} has missing values and
 \examples{
 set.seed(1)
 y <- simulate_inad(
-  n_subjects = 40,
+  n_subjects = 15,
   n_time = 5,
   order = 1,
   thinning = "binom",
@@ -96,7 +96,7 @@ out <- test_order_inad(
   order_alt = 1,
   thinning = "binom",
   innovation = "pois",
-  max_iter = 20
+  max_iter = 8
 )
 out$statistic
 }

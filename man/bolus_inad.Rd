@@ -3,7 +3,7 @@
 \docType{data}
 \name{bolus_inad}
 \alias{bolus_inad}
-\title{Morphine bolus analgesia counts}
+\title{Morphine Bolus Analgesia Counts}
 \format{
 A list with four components:
 \describe{
