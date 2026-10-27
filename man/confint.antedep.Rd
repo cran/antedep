@@ -7,42 +7,28 @@
 \alias{confint.inad_fit}
 \title{Confidence Intervals for Antedependence Model Fits}
 \usage{
-\method{confint}{gau_fit}(object, parm, level = 0.95, ...)
+\method{confint}{gau_fit}(object, parm = NULL, level = 0.95, ...)
 
-\method{confint}{cat_fit}(object, parm, level = 0.95, y = NULL, ...)
+\method{confint}{cat_fit}(object, parm = NULL, level = 0.95, y = NULL, ...)
 
-\method{confint}{inad_fit}(object, parm, level = 0.95, y, ...)
+\method{confint}{inad_fit}(object, parm = NULL, level = 0.95, y, ...)
 }
 \arguments{
-\item{object}{A fitted model object of class \code{gau_fit},
-\code{cat_fit}, or \code{inad_fit}.}
+\item{object}{A fitted model object.}
 
-\item{parm}{Unused (all parameters are returned).}
+\item{parm}{Optional character vector of parameter names.}
 
-\item{level}{Confidence level; default \code{0.95}.}
+\item{level}{Confidence level.}
 
-\item{y}{(\code{inad_fit} only) The original data matrix used for
-fitting, required by \code{\link{ci_inad}}.}
+\item{...}{Passed to the underlying \code{ci_*} helper.}
 
-\item{...}{Passed to the underlying \code{ci_*} function.}
+\item{y}{Original data matrix, required for \code{inad_fit}.}
 }
 \value{
-For \code{gau_fit}: a matrix with columns \code{lower} and
-\code{upper} and one row per parameter.
-For \code{cat_fit}: the \code{gau_ci} list returned by \code{\link{ci_cat}}.
-For \code{inad_fit}: the \code{inad_ci} list returned by
-\code{\link{ci_inad}}.
+A matrix with columns \code{lower} and \code{upper}.
 }
 \description{
-Computes Wald confidence intervals for the parameters of a fitted
-antedependence model by delegating to the corresponding
-\code{ci_gau}, \code{ci_cat}, or \code{ci_inad} function.
-}
-\examples{
-\donttest{
-set.seed(1)
-y <- simulate_gau(n_subjects = 40, n_time = 5, order = 1, phi = 0.4)
-fit <- fit_gau(y, order = 1)
-confint(fit)
-}
+Returns a standard two-column matrix with \code{lower} and \code{upper}
+columns. The structured helpers \code{ci_gau()}, \code{ci_cat()}, and
+\code{ci_inad()} remain available for detailed inspection.
 }

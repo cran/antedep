@@ -12,57 +12,100 @@ ci_inad(
   idx_time = NULL,
   ridge = 0,
   profile_maxeval = 2500,
-  profile_xtol_rel = 1e-06
+  profile_xtol_rel = 1e-06,
+  method = c("louis", "hessian"),
+  log_scale = TRUE,
+  profile_tau = TRUE,
+  hessian_step = 0.001
 )
 }
 \arguments{
 \item{y}{Integer matrix with \code{n_subjects} rows and \code{n_time} columns.}
 
-\item{fit}{A fitted model object returned by \code{\link{fit_inad}}.}
+\item{fit}{A fitted model object returned by \code{\link{fit_inad}} or
+\code{\link{em_inad}}.}
 
-\item{blocks}{Optional integer vector of length \code{n_subjects}. Required for
-block effect intervals. If provided, should match \code{fit$settings$blocks}.}
+\item{blocks}{Optional integer vector of length \code{n_subjects}. Defaults to
+the block assignment stored in \code{fit}.}
 
 \item{level}{Confidence level between 0 and 1.}
 
-\item{idx_time}{Optional integer vector of time indices for which to compute
-intervals. Default is all time points.}
+\item{idx_time}{Optional integer vector of time indices whose time-specific
+parameters are reported. Default is all time points. Time-invariant
+parameters and block effects are always reported.}
 
-\item{ridge}{Nonnegative ridge value added to the observed information matrix
-used for Louis based Wald intervals.}
+\item{ridge}{Nonnegative ridge value added to the observed information
+matrix.}
 
 \item{profile_maxeval}{Maximum number of function evaluations used in the
-profile likelihood refits.}
+profile likelihood refits for \code{tau}.}
 
 \item{profile_xtol_rel}{Relative tolerance used in the profile likelihood refits.}
+
+\item{method}{\code{"louis"} (default) or \code{"hessian"}.}
+
+\item{log_scale}{Logical; if \code{TRUE} (default), intervals for positive
+parameters are computed on the log scale.}
+
+\item{profile_tau}{Logical; compute profile-likelihood intervals for block
+effects of unconstrained fits. Default \code{TRUE}.}
+
+\item{hessian_step}{Absolute step for \code{method = "hessian"}.}
 }
 \value{
 An object of class \code{inad_ci}, a list with elements
-\code{settings}, \code{level}, \code{alpha}, \code{theta}, \code{nb_inno_size},
-and \code{tau}. Each non NULL interval element is a data frame with columns
-\code{param}, \code{est}, \code{lower}, \code{upper}, and possibly \code{se}
-and \code{width}.
+\code{settings}, \code{level}, \code{method}, \code{alpha}, \code{theta},
+\code{nb_inno_size}, \code{tau} (Wald), \code{tau_profile} (when computed),
+and \code{vcov}, the estimated covariance matrix of the free parameters.
+Each interval element is a data frame with columns \code{param},
+\code{est}, \code{se}, \code{lower}, \code{upper}, \code{width},
+\code{level}, and \code{scale}.
 }
 \description{
-Computes confidence intervals for selected parameters from a fitted INAD model.
-For the fixed effect case, Wald intervals for time varying alpha and theta are
-computed via Louis identity for supported thinning-innovation combinations.
-For block effects tau, profile likelihood intervals are computed by fixing one
-component of tau and re maximizing the log likelihood over nuisance parameters.
-For negative binomial innovations, Wald intervals for the innovation size
-parameter are computed using a one dimensional observed information approximation
-per time point, holding other parameters fixed at their fitted values.
+Computes Wald confidence intervals for the free parameters of a fitted INAD
+model from the observed information.
+}
+\details{
+With \code{method = "louis"} (the default), the observed information is
+computed exactly by Louis' identity: for every time point the latent thinned
+counts have a finite conditional distribution given the data, so the
+conditional moments of the complete-data score and Hessian are finite sums.
+The time-point contributions are combined over all free parameters jointly,
+including block effects and parameters shared across time by
+\code{fit_inad(constrain = ...)}. With \code{method = "hessian"}, the
+observed information is instead the negative Hessian of the observed-data
+log-likelihood computed numerically (Richardson extrapolation with fixed
+absolute steps; positive parameters on the log scale); the two methods agree
+up to numerical error, except that numerical differentiation is unreliable
+for estimates very close to zero, for which the Louis calculation should be
+used. Estimates on the boundary of the parameter space (a thinning
+coefficient at zero or, for binomial thinning, at one, or a negative binomial
+innovation size at its cap \code{nb_inno_size_ub}) are held fixed and
+receive no Wald interval. The information is computed from exact finite
+sums (up to floating-point arithmetic); the resulting Wald intervals are
+large-sample approximations.
+
+By default, intervals for the positive parameters (\code{alpha},
+\code{theta}, \code{nb_inno_size}) are formed on the log scale and
+transformed back; intervals for block effects use their natural scale. For
+unconstrained fits with block effects, profile-likelihood intervals for
+\code{tau} are also computed (element \code{tau_profile}).
 }
 \examples{
 \donttest{
 data("bolus_inad", package = "antedep")
-y <- bolus_inad$y
+y <- bolus_inad$y[, 1:4]  # first four occasions, to keep the example short
 blocks <- bolus_inad$blocks
-fit <- fit_inad(y, order = 1, thinning = "binom", innovation = "bell", blocks = blocks)
-ci <- ci_inad(y, fit, blocks = blocks)
+fit <- fit_inad(y, order = 1, thinning = "binom", innovation = "pois", blocks = blocks)
+ci <- ci_inad(y, fit, blocks = blocks, profile_tau = FALSE)
 ci$alpha
 ci$theta
 ci$tau
 }
 
+}
+\references{
+Louis, T.A. (1982). Finding the observed information matrix when using the
+EM algorithm. \emph{Journal of the Royal Statistical Society, Series B}, 44,
+226-233.
 }

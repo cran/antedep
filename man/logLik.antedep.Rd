@@ -2,11 +2,14 @@
 % Please edit documentation in R/generics.R
 \name{logLik.antedep}
 \alias{logLik.antedep}
+\alias{logLik.ad_fit}
 \alias{logLik.gau_fit}
 \alias{logLik.cat_fit}
 \alias{logLik.inad_fit}
-\title{Log-likelihood for antedependence model fits}
+\title{Log-Likelihood for Antedependence Model Fits}
 \usage{
+\method{logLik}{ad_fit}(object, ...)
+
 \method{logLik}{gau_fit}(object, ...)
 
 \method{logLik}{cat_fit}(object, ...)
@@ -15,28 +18,16 @@
 }
 \arguments{
 \item{object}{A fitted model object of class \code{gau_fit},
-\code{cat_fit}, or \code{inad_fit}.}
+\code{cat_fit}, \code{inad_fit}, or common parent class \code{ad_fit}.}
 
 \item{...}{Unused; present for S3 consistency.}
 }
 \value{
-A scalar of class \code{"logLik"} with attributes
-\code{df} (number of free parameters) and \code{nobs}
-(number of subjects).
+A scalar of class \code{"logLik"} with attributes \code{df}
+and \code{nobs}.
 }
 \description{
-Extracts the maximised log-likelihood from a fitted antedependence model
+Extracts the maximized log-likelihood from a fitted antedependence model
 and returns a \code{"logLik"} object compatible with \code{\link[stats]{AIC}}
 and \code{\link[stats]{BIC}}.
-}
-\examples{
-\donttest{
-set.seed(1)
-y <- simulate_gau(n_subjects = 40, n_time = 5, order = 1, phi = 0.4)
-fit <- fit_gau(y, order = 1)
-logLik(fit)
-AIC(fit)
-BIC(fit)
-}
-
 }

@@ -180,26 +180,10 @@ simulate_inad <- function(n_subjects,
     }
 
     if (order > 0L) {
-        if (thinning %in% c("binom", "nbinom")) {
-            if (order == 1L) {
-                if (any(alpha < 0 | alpha >= 1)) {
-                    stop("alpha must lie in [0, 1) for binom and nbinom thinning")
-                }
-            } else {
-                if (any(alpha < 0 | alpha >= 1)) {
-                    stop("alpha must lie in [0, 1) for binom and nbinom thinning")
-                }
-            }
-        } else if (thinning == "pois") {
-            if (order == 1L) {
-                if (any(alpha < 0)) {
-                    stop("alpha must be nonnegative for pois thinning")
-                }
-            } else {
-                if (any(alpha < 0)) {
-                    stop("alpha must be nonnegative for pois thinning")
-                }
-            }
+        # alpha <= 1 is required only for binomial thinning.
+        if (any(alpha < 0)) stop("alpha must be nonnegative")
+        if (thinning == "binom" && any(alpha > 1)) {
+            stop("alpha must lie in [0, 1] for binom thinning")
         }
     }
 

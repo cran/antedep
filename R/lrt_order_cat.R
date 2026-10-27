@@ -80,11 +80,11 @@
 #'
 #' # Test AD(0) vs AD(1)
 #' test_01 <- test_order_cat(y, order_null = 0, order_alt = 1)
-#' print(test_01$table)
+#' print(test_01)
 #'
 #' # Test AD(1) vs AD(2)
 #' test_12 <- test_order_cat(y, order_null = 1, order_alt = 2)
-#' print(test_12$table)
+#' print(test_12)
 #'
 #' # Using pre-fitted models
 #' fit0 <- fit_cat(y, order = 0)
@@ -350,7 +350,7 @@ print.cat_lrt <- function(x, ...) {
 #' \donttest{
 #' y <- simulate_cat(200, 6, order = 1, n_categories = 2)
 #' result <- run_order_tests_cat(y, max_order = 2)
-#' print(result$table)
+#' print(result)
 #' cat("Selected order:", result$selected_order, "\n")
 #' }
 #'
@@ -441,11 +441,36 @@ run_order_tests_cat <- function(y, max_order = 2, blocks = NULL,
     }
   }
   
-  list(
+  out <- list(
     method = test,
     tests = tests,
     table = test_results,
     fits = fits,
     selected_order = selected_order
   )
+  class(out) <- "cat_order_tests"
+  out
+}
+
+#' Print Method for Categorical Order Test Collections
+#'
+#' @param x Object returned by \code{\link{run_order_tests_cat}}.
+#' @param digits Number of digits used for printed numeric columns.
+#' @param ... Unused.
+#'
+#' @return The input object, invisibly.
+#' @export
+print.cat_order_tests <- function(x, digits = 4, ...) {
+  cat("Sequential Order Tests for Categorical AD\n")
+  cat("=========================================\n\n")
+  if (!is.null(x$table)) {
+    tbl <- x$table
+    num_cols <- vapply(tbl, is.numeric, logical(1))
+    tbl[num_cols] <- lapply(tbl[num_cols], round, digits = digits)
+    print(tbl, row.names = FALSE)
+  }
+  if (!is.null(x$selected_order)) {
+    cat("\nSelected order:", x$selected_order, "\n")
+  }
+  invisible(x)
 }

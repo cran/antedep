@@ -3,37 +3,22 @@
 \name{fitted.gau_fit}
 \alias{fitted.gau_fit}
 \alias{residuals.gau_fit}
-\title{Fitted values and residuals for Gaussian AD fits}
+\title{Fitted Values and Residuals for Gaussian AD Fits}
 \usage{
 \method{fitted}{gau_fit}(object, y, ...)
 
 \method{residuals}{gau_fit}(object, y, ...)
 }
 \arguments{
-\item{object}{A \code{gau_fit} object (complete-data fit only).}
+\item{object}{A \code{gau_fit} object.}
 
-\item{y}{The original data matrix used to produce \code{object}
-(n_subjects \eqn{\times} n_time).  Required because the fit object
-does not store the raw data.}
+\item{y}{Original data matrix.}
 
 \item{...}{Unused.}
 }
 \value{
-A numeric matrix of the same dimensions as \code{y}.
+A numeric matrix of fitted values or residuals.
 }
 \description{
-Computes fitted (conditional mean) values and residuals for a
-complete-data Gaussian antedependence fit.  The fitted value for subject
-\eqn{s} at time \eqn{t} is the conditional mean
-\eqn{E[Y_{st} | Y_{s,t-p}, \ldots, Y_{s,t-1}]}.
-}
-\examples{
-\donttest{
-set.seed(1)
-y <- simulate_gau(n_subjects = 40, n_time = 5, order = 1, phi = 0.4)
-fit <- fit_gau(y, order = 1)
-yhat <- fitted(fit, y)
-resid <- residuals(fit, y)
-}
-
+Fitted Values and Residuals for Gaussian AD Fits
 }

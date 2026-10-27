@@ -2,7 +2,7 @@
 % Please edit documentation in R/diagnostics.R
 \name{summary.partial_corr}
 \alias{summary.partial_corr}
-\title{Summary Method for Partial Correlation Objects}
+\title{Summary method for partial_corr objects}
 \usage{
 \method{summary}{partial_corr}(object, ...)
 }
@@ -13,22 +13,15 @@
 \item{...}{Currently unused.}
 }
 \value{
-Invisibly returns a data frame with one row per lag and columns
-\code{lag}, \code{n_pairs}, \code{mean_abs}, \code{min}, \code{max},
-and \code{n_signif}.
+Invisibly returns a data frame with one row per lag containing
+columns \code{lag}, \code{n_pairs}, \code{mean_abs}, \code{min}, and
+\code{max}.
 }
 \description{
-Prints a lag-by-lag summary of intervenor-adjusted partial correlations,
-reporting the mean absolute value and range at each lag together with the
+Prints a lag-by-lag summary of intervenor-adjusted partial
+correlations, reporting the mean and range at each lag together with the
 number of pairs that exceed the rough significance threshold
 \eqn{2/\sqrt{n}}.
-}
-\examples{
-\donttest{
-data("cattle_growth")
-pc <- partial_corr(cattle_growth$y_A)
-summary(pc)
-}
 }
 \seealso{
 \code{\link{partial_corr}}, \code{\link{plot.partial_corr}}

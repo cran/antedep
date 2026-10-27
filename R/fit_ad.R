@@ -1,0 +1,31 @@
+#' Unified Antedependence Model Fitting Interface
+#'
+#' Fits one of the package's antedependence model families through a common
+#' entry point. The family-specific functions remain available and are still
+#' the clearest choice when using family-specific arguments.
+#'
+#' @param y Longitudinal data matrix.
+#' @param family Model family. Use \code{"gaussian"} for continuous AD models,
+#'   \code{"categorical"} for categorical AD models, or \code{"inad"} for
+#'   integer-valued AD models.
+#' @param ... Arguments passed to \code{\link{fit_gau}}, \code{\link{fit_cat}},
+#'   or \code{\link{fit_inad}}.
+#'
+#' @return A fitted model object inheriting from \code{ad_fit}.
+#'
+#' @examples
+#' set.seed(1)
+#' y <- simulate_gau(n_subjects = 30, n_time = 5, order = 1, phi = 0.3)
+#' fit <- fit_ad(y, family = "gaussian", order = 1)
+#' BIC(fit)
+#'
+#' @export
+fit_ad <- function(y, family = c("gaussian", "categorical", "inad"), ...) {
+    family <- match.arg(family)
+    switch(
+        family,
+        gaussian = fit_gau(y, ...),
+        categorical = fit_cat(y, ...),
+        inad = fit_inad(y, ...)
+    )
+}

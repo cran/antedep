@@ -2,11 +2,14 @@
 % Please edit documentation in R/generics.R
 \name{nobs.antedep}
 \alias{nobs.antedep}
+\alias{nobs.ad_fit}
 \alias{nobs.gau_fit}
 \alias{nobs.cat_fit}
 \alias{nobs.inad_fit}
-\title{Number of observations for antedependence model fits}
+\title{Number of Subjects for Antedependence Model Fits}
 \usage{
+\method{nobs}{ad_fit}(object, ...)
+
 \method{nobs}{gau_fit}(object, ...)
 
 \method{nobs}{cat_fit}(object, ...)
@@ -14,8 +17,7 @@
 \method{nobs}{inad_fit}(object, ...)
 }
 \arguments{
-\item{object}{A fitted model object of class \code{gau_fit},
-\code{cat_fit}, or \code{inad_fit}.}
+\item{object}{A fitted model object.}
 
 \item{...}{Unused.}
 }
@@ -23,5 +25,5 @@
 Integer scalar: number of subjects.
 }
 \description{
-Number of observations for antedependence model fits
+Number of Subjects for Antedependence Model Fits
 }

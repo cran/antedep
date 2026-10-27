@@ -35,7 +35,8 @@ A numeric scalar BIC or AIC value.
 Compute BIC or AIC for a fitted Gaussian, categorical, or INAD
 antedependence model. Since \code{logLik()} methods are registered for all three
 fit classes, \code{stats::AIC()} and \code{stats::BIC()} generics also work directly
-and are preferred.
+and are preferred in new code. The family-specific helpers are retained as
+thin compatibility wrappers for existing code.
 }
 \details{
 The BIC is computed as:

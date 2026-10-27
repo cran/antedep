@@ -1,79 +1,182 @@
 # R/generics.R
-# S3 generic methods for antedependence model fit objects:
-#   logLik, coef, nobs, fitted, residuals
-#
-# Once logLik methods are registered, stats::AIC() and stats::BIC() work
-# automatically for all three fit families without any extra code.
+# S3 methods for antedependence model fit objects.
 
-# ===========================================================================
-# logLik
-# ===========================================================================
+.ad_logLik <- function(object) {
+    ll <- object$log_l
+    attr(ll, "df") <- object$n_params
+    attr(ll, "nobs") <- object$settings$n_subjects
+    class(ll) <- "logLik"
+    ll
+}
 
-#' Log-likelihood for antedependence model fits
+.ad_nobs <- function(object) object$settings$n_subjects
+
+.ad_empty_numeric <- function() {
+    stats::setNames(numeric(0), character(0))
+}
+
+.ad_named_vector <- function(x, prefix, drop_first = FALSE) {
+    if (is.null(x)) return(.ad_empty_numeric())
+
+    if (is.matrix(x) || length(dim(x)) > 1L) {
+        dims <- dim(x)
+        idx <- arrayInd(seq_along(x), .dim = dims)
+        vals <- as.numeric(x)
+        keep <- rep(TRUE, length(vals))
+        if (drop_first) keep <- rowSums(idx > 1L) > 0L
+        vals <- vals[keep]
+        idx <- idx[keep, , drop = FALSE]
+        nms <- apply(idx, 1L, function(z) paste0(prefix, "[", paste(z, collapse = ","), "]"))
+        return(stats::setNames(vals, nms))
+    }
+
+    vals <- as.numeric(x)
+    idx <- seq_along(vals)
+    if (drop_first && length(idx) > 0L) {
+        vals <- vals[-1L]
+        idx <- idx[-1L]
+    }
+    if (length(vals) == 0L) return(.ad_empty_numeric())
+    stats::setNames(vals, paste0(prefix, "[", idx, "]"))
+}
+
+.ad_flatten_list <- function(x, prefix = NULL) {
+    if (is.null(x)) return(.ad_empty_numeric())
+    if (!is.list(x) || is.data.frame(x)) {
+        nm <- if (is.null(prefix) || !nzchar(prefix)) "param" else prefix
+        return(.ad_named_vector(x, nm))
+    }
+
+    nms <- names(x)
+    if (is.null(nms)) nms <- paste0("item", seq_along(x))
+    parts <- vector("list", length(x))
+    for (i in seq_along(x)) {
+        child_prefix <- if (is.null(prefix) || !nzchar(prefix)) nms[[i]] else paste(prefix, nms[[i]], sep = ".")
+        parts[[i]] <- .ad_flatten_list(x[[i]], child_prefix)
+    }
+    out <- unlist(parts, use.names = TRUE)
+    if (is.null(out)) return(.ad_empty_numeric())
+    out
+}
+
+.ad_ci_summary <- function(ci) {
+    out <- summary(ci)
+    if (is.null(out) || !is.data.frame(out) || nrow(out) == 0L) {
+        return(data.frame(param = character(0), est = numeric(0),
+                          se = numeric(0), lower = numeric(0),
+                          upper = numeric(0)))
+    }
+    if (!"param" %in% names(out) && "parameter" %in% names(out)) out$param <- out$parameter
+    if (!"est" %in% names(out) && "estimate" %in% names(out)) out$est <- out$estimate
+    out
+}
+
+.ad_confint_matrix <- function(ci, parm = NULL) {
+    tab <- .ad_ci_summary(ci)
+    if (!all(c("param", "lower", "upper") %in% names(tab))) {
+        return(matrix(NA_real_, nrow = 0L, ncol = 2L,
+                      dimnames = list(NULL, c("lower", "upper"))))
+    }
+
+    mat <- as.matrix(tab[, c("lower", "upper"), drop = FALSE])
+    rownames(mat) <- tab$param
+    colnames(mat) <- c("lower", "upper")
+
+    if (!missing(parm) && !is.null(parm)) {
+        mat <- mat[intersect(as.character(parm), rownames(mat)), , drop = FALSE]
+    }
+    mat
+}
+
+.ad_vcov_from_ci <- function(coefs, ci) {
+    vars <- stats::setNames(rep(NA_real_, length(coefs)), names(coefs))
+    tab <- .ad_ci_summary(ci)
+    if (all(c("param", "se") %in% names(tab))) {
+        valid <- !is.na(tab$se)
+        hit <- intersect(names(vars), tab$param[valid])
+        vars[hit] <- tab$se[match(hit, tab$param)]^2
+    }
+    mat <- diag(vars, nrow = length(vars), ncol = length(vars))
+    dimnames(mat) <- list(names(vars), names(vars))
+    mat
+}
+
+.ad_anova <- function(object, ..., test = "Chisq") {
+    dots <- list(...)
+    objects <- c(list(object), dots)
+    if (length(objects) == 0L) stop("at least one model object is required")
+    if (!all(vapply(objects, inherits, logical(1), what = "ad_fit"))) {
+        stop("all objects must inherit from 'ad_fit'", call. = FALSE)
+    }
+
+    calls <- as.list(match.call(expand.dots = FALSE)$...)
+    labels <- c(deparse(match.call()$object), vapply(calls, deparse, character(1)))
+    if (length(labels) != length(objects) || any(!nzchar(labels))) {
+        labels <- paste0("model", seq_along(objects))
+    }
+
+    ll <- vapply(objects, function(x) as.numeric(logLik(x)), numeric(1))
+    df <- vapply(objects, function(x) attr(logLik(x), "df"), numeric(1))
+    aic <- vapply(objects, stats::AIC, numeric(1))
+    bic <- vapply(objects, stats::BIC, numeric(1))
+
+    chi_df <- c(NA_real_, diff(df))
+    chisq <- c(NA_real_, 2 * diff(ll))
+    pval <- ifelse(is.finite(chisq) & is.finite(chi_df) & chi_df > 0 & chisq >= 0,
+                   stats::pchisq(chisq, df = chi_df, lower.tail = FALSE),
+                   NA_real_)
+
+    out <- data.frame(
+        Df = df,
+        logLik = ll,
+        AIC = aic,
+        BIC = bic,
+        Chisq = chisq,
+        `Chi Df` = chi_df,
+        `Pr(>Chisq)` = pval,
+        check.names = FALSE
+    )
+    rownames(out) <- labels
+    structure(out, heading = "Likelihood-ratio comparison of antedependence fits",
+              class = c("anova", "data.frame"))
+}
+
+#' Log-Likelihood for Antedependence Model Fits
 #'
-#' Extracts the maximised log-likelihood from a fitted antedependence model
+#' Extracts the maximized log-likelihood from a fitted antedependence model
 #' and returns a \code{"logLik"} object compatible with \code{\link[stats]{AIC}}
 #' and \code{\link[stats]{BIC}}.
 #'
 #' @param object A fitted model object of class \code{gau_fit},
-#'   \code{cat_fit}, or \code{inad_fit}.
+#'   \code{cat_fit}, \code{inad_fit}, or common parent class \code{ad_fit}.
 #' @param ... Unused; present for S3 consistency.
 #'
-#' @return A scalar of class \code{"logLik"} with attributes
-#'   \code{df} (number of free parameters) and \code{nobs}
-#'   (number of subjects).
-#'
-#' @examples
-#' \donttest{
-#' set.seed(1)
-#' y <- simulate_gau(n_subjects = 40, n_time = 5, order = 1, phi = 0.4)
-#' fit <- fit_gau(y, order = 1)
-#' logLik(fit)
-#' AIC(fit)
-#' BIC(fit)
-#' }
+#' @return A scalar of class \code{"logLik"} with attributes \code{df}
+#'   and \code{nobs}.
 #'
 #' @name logLik.antedep
 NULL
 
 #' @rdname logLik.antedep
+#' @importFrom stats logLik
 #' @export
-logLik.gau_fit <- function(object, ...) {
-    ll <- object$log_l
-    attr(ll, "df")   <- object$n_params
-    attr(ll, "nobs") <- object$settings$n_subjects
-    class(ll) <- "logLik"
-    ll
-}
+logLik.ad_fit <- function(object, ...) .ad_logLik(object)
 
 #' @rdname logLik.antedep
 #' @export
-logLik.cat_fit <- function(object, ...) {
-    ll <- object$log_l
-    attr(ll, "df")   <- object$n_params
-    attr(ll, "nobs") <- object$settings$n_subjects
-    class(ll) <- "logLik"
-    ll
-}
+logLik.gau_fit <- function(object, ...) .ad_logLik(object)
 
 #' @rdname logLik.antedep
 #' @export
-logLik.inad_fit <- function(object, ...) {
-    ll <- object$log_l
-    attr(ll, "df")   <- object$n_params
-    attr(ll, "nobs") <- object$settings$n_subjects
-    class(ll) <- "logLik"
-    ll
-}
+logLik.cat_fit <- function(object, ...) .ad_logLik(object)
 
-# ===========================================================================
-# nobs
-# ===========================================================================
+#' @rdname logLik.antedep
+#' @export
+logLik.inad_fit <- function(object, ...) .ad_logLik(object)
 
-#' Number of observations for antedependence model fits
+#' Number of Subjects for Antedependence Model Fits
 #'
-#' @param object A fitted model object of class \code{gau_fit},
-#'   \code{cat_fit}, or \code{inad_fit}.
+#' @param object A fitted model object.
 #' @param ... Unused.
 #'
 #' @return Integer scalar: number of subjects.
@@ -84,105 +187,126 @@ NULL
 #' @rdname nobs.antedep
 #' @importFrom stats nobs
 #' @export
-nobs.gau_fit <- function(object, ...) object$settings$n_subjects
+nobs.ad_fit <- function(object, ...) .ad_nobs(object)
 
 #' @rdname nobs.antedep
 #' @export
-nobs.cat_fit <- function(object, ...) object$settings$n_subjects
+nobs.gau_fit <- function(object, ...) .ad_nobs(object)
 
 #' @rdname nobs.antedep
 #' @export
-nobs.inad_fit <- function(object, ...) object$settings$n_subjects
+nobs.cat_fit <- function(object, ...) .ad_nobs(object)
 
-# ===========================================================================
-# coef
-# ===========================================================================
+#' @rdname nobs.antedep
+#' @export
+nobs.inad_fit <- function(object, ...) .ad_nobs(object)
 
-#' Extract model coefficients from antedependence fits
+#' Extract Model Coefficients from Antedependence Fits
 #'
-#' Returns the estimated parameters of a fitted antedependence model as a
-#' named list.
+#' By default, returns a named numeric vector so standard tools can consume
+#' fitted objects. Use \code{type = "list"} to inspect the family-specific
+#' structured representation.
 #'
-#' @param object A fitted model object of class \code{gau_fit},
-#'   \code{cat_fit}, or \code{inad_fit}.
+#' @param object A fitted model object.
+#' @param type Return type: \code{"vector"} (default) or \code{"list"}.
 #' @param ... Unused.
 #'
-#' @return For \code{gau_fit}: a named list with elements \code{mu},
-#'   \code{phi}, \code{sigma}, and (if a block effect was estimated)
-#'   \code{tau}.
-#'   For \code{cat_fit}: a list with \code{marginal} and \code{transition}
-#'   probability arrays.
-#'   For \code{inad_fit}: a named list with elements \code{alpha},
-#'   \code{theta}, and (if applicable) \code{tau} and \code{nb_inno_size}.
-#'
-#' @examples
-#' \donttest{
-#' set.seed(1)
-#' y <- simulate_gau(n_subjects = 40, n_time = 5, order = 1, phi = 0.4)
-#' fit <- fit_gau(y, order = 1)
-#' coef(fit)
-#' }
+#' @return A named numeric vector or a family-specific named list.
 #'
 #' @name coef.antedep
 NULL
 
 #' @rdname coef.antedep
+#' @importFrom stats coef
 #' @export
-coef.gau_fit <- function(object, ...) {
+coef.gau_fit <- function(object, type = c("vector", "list"), ...) {
+    type <- match.arg(type)
     out <- list()
-    if (!is.null(object$mu))    out$mu    <- object$mu
-    if (!is.null(object$phi))   out$phi   <- object$phi
+    if (!is.null(object$mu)) out$mu <- object$mu
     if (!is.null(object$sigma)) out$sigma <- object$sigma
-    if (!is.null(object$tau) && any(as.numeric(object$tau) != 0))
-        out$tau <- object$tau
-    out
+    if (!is.null(object$phi)) out$phi <- object$phi
+    if (!is.null(object$tau) && any(as.numeric(object$tau) != 0)) {
+        tau <- as.numeric(object$tau)
+        if (length(tau) > 1L) out$tau <- tau[-1L]
+    }
+    if (type == "list") return(out)
+
+    ord <- object$settings$order
+    parts <- list(.ad_named_vector(object$mu, "mu"),
+                  .ad_named_vector(object$sigma, "sigma"))
+    if (ord == 1L && !is.null(object$phi)) {
+        parts[[length(parts) + 1L]] <- .ad_named_vector(object$phi, "phi1", drop_first = TRUE)
+    } else if (ord == 2L && !is.null(object$phi)) {
+        phi <- as.matrix(object$phi)
+        if (nrow(phi) >= 1L) parts[[length(parts) + 1L]] <- .ad_named_vector(phi[1L, ], "phi1", drop_first = TRUE)
+        if (nrow(phi) >= 2L) parts[[length(parts) + 1L]] <- .ad_named_vector(phi[2L, ], "phi2", drop_first = TRUE)
+    }
+    if (!is.null(out$tau)) {
+        parts[[length(parts) + 1L]] <- stats::setNames(out$tau, paste0("tau[", seq_along(out$tau) + 1L, "]"))
+    }
+    unlist(parts, use.names = TRUE)
 }
 
 #' @rdname coef.antedep
 #' @export
-coef.cat_fit <- function(object, ...) {
-    list(marginal = object$marginal, transition = object$transition)
+coef.cat_fit <- function(object, type = c("vector", "list"), ...) {
+    type <- match.arg(type)
+    out <- list(marginal = object$marginal, transition = object$transition)
+    if (type == "list") return(out)
+
+    ci_vec <- tryCatch({
+        tab <- .ad_ci_summary(ci_cat(fit = object))
+        if (all(c("param", "est") %in% names(tab))) stats::setNames(tab$est, tab$param) else NULL
+    }, error = function(e) NULL)
+    if (!is.null(ci_vec)) return(ci_vec)
+
+    .ad_flatten_list(out)
 }
 
 #' @rdname coef.antedep
 #' @export
-coef.inad_fit <- function(object, ...) {
+coef.inad_fit <- function(object, type = c("vector", "list"), ...) {
+    type <- match.arg(type)
     out <- list()
-    if (!is.null(object$alpha))         out$alpha         <- object$alpha
-    if (!is.null(object$theta))         out$theta         <- object$theta
-    if (!is.null(object$tau) && any(as.numeric(object$tau) != 0))
-        out$tau <- object$tau
-    if (!is.null(object$nb_inno_size))  out$nb_inno_size  <- object$nb_inno_size
-    out
+    if (!is.null(object$alpha)) out$alpha <- object$alpha
+    if (!is.null(object$theta)) out$theta <- object$theta
+    if (!is.null(object$tau) && any(as.numeric(object$tau) != 0)) {
+        tau <- as.numeric(object$tau)
+        if (length(tau) > 1L) out$tau <- tau[-1L]
+    }
+    if (!is.null(object$nb_inno_size)) out$nb_inno_size <- object$nb_inno_size
+    if (type == "list") return(out)
+
+    ord <- object$settings$order
+    parts <- list()
+    if (ord == 1L && !is.null(object$alpha)) {
+        parts[[length(parts) + 1L]] <- .ad_named_vector(object$alpha, "alpha", drop_first = TRUE)
+    } else if (ord == 2L && !is.null(object$alpha)) {
+        alpha <- as.matrix(object$alpha)
+        if (ncol(alpha) >= 1L) parts[[length(parts) + 1L]] <- .ad_named_vector(alpha[, 1L], "alpha1", drop_first = TRUE)
+        if (ncol(alpha) >= 2L) {
+            a2 <- .ad_named_vector(alpha[, 2L], "alpha2", drop_first = TRUE)
+            a2 <- a2[!grepl("^alpha2\\[2\\]$", names(a2))]
+            parts[[length(parts) + 1L]] <- a2
+        }
+    }
+    parts[[length(parts) + 1L]] <- .ad_named_vector(object$theta, "theta")
+    if (!is.null(out$tau)) {
+        parts[[length(parts) + 1L]] <- stats::setNames(out$tau, paste0("tau[", seq_along(out$tau) + 1L, "]"))
+    }
+    if (!is.null(object$nb_inno_size)) {
+        parts[[length(parts) + 1L]] <- .ad_named_vector(object$nb_inno_size, "nb_inno_size")
+    }
+    unlist(parts, use.names = TRUE)
 }
 
-# ===========================================================================
-# fitted / residuals  (Gaussian only -- meaningful for complete-data fits)
-# ===========================================================================
-
-#' Fitted values and residuals for Gaussian AD fits
+#' Fitted Values and Residuals for Gaussian AD Fits
 #'
-#' Computes fitted (conditional mean) values and residuals for a
-#' complete-data Gaussian antedependence fit.  The fitted value for subject
-#' \eqn{s} at time \eqn{t} is the conditional mean
-#' \eqn{E[Y_{st} | Y_{s,t-p}, \ldots, Y_{s,t-1}]}.
-#'
-#' @param object A \code{gau_fit} object (complete-data fit only).
-#' @param y The original data matrix used to produce \code{object}
-#'   (n_subjects \eqn{\times} n_time).  Required because the fit object
-#'   does not store the raw data.
+#' @param object A \code{gau_fit} object.
+#' @param y Original data matrix.
 #' @param ... Unused.
 #'
-#' @return A numeric matrix of the same dimensions as \code{y}.
-#'
-#' @examples
-#' \donttest{
-#' set.seed(1)
-#' y <- simulate_gau(n_subjects = 40, n_time = 5, order = 1, phi = 0.4)
-#' fit <- fit_gau(y, order = 1)
-#' yhat <- fitted(fit, y)
-#' resid <- residuals(fit, y)
-#' }
+#' @return A numeric matrix of fitted values or residuals.
 #'
 #' @name fitted.gau_fit
 NULL
@@ -195,40 +319,35 @@ fitted.gau_fit <- function(object, y, ...) {
     n <- nrow(y)
     T <- ncol(y)
     ord <- object$settings$order
-    mu  <- as.numeric(object$mu)
+    mu <- as.numeric(object$mu)
     yhat <- matrix(NA_real_, nrow = n, ncol = T)
 
-    # block mean shifts
     tau_vec <- rep(0, n)
     if (!is.null(object$settings$blocks) && !is.null(object$tau)) {
         tau_vec <- as.numeric(object$tau)[object$settings$blocks]
     }
-    m <- function(t) mu[t] + tau_vec   # length-n mean vector at time t
+    m <- function(t) mu[t] + tau_vec
 
     yhat[, 1] <- m(1)
-
     if (ord == 0) {
         for (t in seq_len(T)) yhat[, t] <- m(t)
         return(yhat)
     }
-
     if (ord == 1) {
         phi <- as.numeric(object$phi)
-        for (t in 2:T)
-            yhat[, t] <- m(t) + phi[t] * (y[, t - 1] - m(t - 1))
+        for (t in 2:T) yhat[, t] <- m(t) + phi[t] * (y[, t - 1] - m(t - 1))
         return(yhat)
     }
-
     if (ord == 2) {
-        phi <- as.matrix(object$phi)   # 2 x T
+        phi <- as.matrix(object$phi)
         yhat[, 2] <- m(2) + phi[1, 2] * (y[, 1] - m(1))
-        for (t in 3:T)
+        for (t in 3:T) {
             yhat[, t] <- m(t) +
                 phi[1, t] * (y[, t - 1] - m(t - 1)) +
                 phi[2, t] * (y[, t - 2] - m(t - 2))
+        }
         return(yhat)
     }
-
     yhat
 }
 
@@ -241,34 +360,13 @@ residuals.gau_fit <- function(object, y, ...) {
     y - fitted(object, y)
 }
 
-# ===========================================================================
-# as.ts  (simulate_* output -> ts / mts)
-# ===========================================================================
-
-#' Convert antedependence simulation output to a time-series object
+#' Convert Antedependence Simulation Output to a Time-Series Object
 #'
-#' Converts the panel matrix returned by \code{\link{simulate_gau}},
-#' \code{\link{simulate_cat}}, or \code{\link{simulate_inad}} into an
-#' \code{mts} / \code{\link[stats]{ts}} object suitable for time-series
-#' functions.  Rows of the original matrix (subjects) become the columns of
-#' the returned object; columns (time points) become the rows.
+#' @param x A matrix returned by \code{\link{simulate_gau}},
+#'   \code{\link{simulate_cat}}, or \code{\link{simulate_inad}}.
+#' @param ... Additional arguments passed to \code{\link[stats]{ts}}.
 #'
-#' @param x A matrix of class \code{gau_sim}, \code{cat_sim}, or
-#'   \code{inad_sim} as returned by the corresponding \code{simulate_*}
-#'   function.
-#' @param ... Additional arguments passed to \code{\link[stats]{ts}}
-#'   (e.g., \code{start}, \code{frequency}).
-#'
-#' @return A \code{ts} (\code{mts}) object with one column per subject.
-#'
-#' @examples
-#' \donttest{
-#' set.seed(1)
-#' y <- simulate_gau(n_subjects = 5, n_time = 10, order = 1, phi = 0.4)
-#' y_ts <- as.ts(y)
-#' class(y_ts)    # "mts" "ts" "matrix" "array"
-#' dim(y_ts)      # 10 x 5
-#' }
+#' @return A \code{ts} or \code{mts} object.
 #'
 #' @name as.ts.antedep_sim
 NULL
@@ -286,27 +384,12 @@ as.ts.cat_sim <- function(x, ...) stats::ts(t(unclass(x)), ...)
 #' @export
 as.ts.inad_sim <- function(x, ...) stats::ts(t(unclass(x)), ...)
 
-# ===========================================================================
-# deviance
-# ===========================================================================
-
-#' Deviance for antedependence model fits
+#' Deviance for Antedependence Model Fits
 #'
-#' Returns the deviance \eqn{-2 \ell} for a fitted antedependence model.
-#'
-#' @param object A fitted model object of class \code{gau_fit},
-#'   \code{cat_fit}, or \code{inad_fit}.
+#' @param object A fitted model object.
 #' @param ... Unused.
 #'
 #' @return A scalar deviance value.
-#'
-#' @examples
-#' \donttest{
-#' set.seed(1)
-#' y <- simulate_gau(n_subjects = 40, n_time = 5, order = 1, phi = 0.4)
-#' fit <- fit_gau(y, order = 1)
-#' deviance(fit)
-#' }
 #'
 #' @name deviance.antedep
 NULL
@@ -314,46 +397,33 @@ NULL
 #' @rdname deviance.antedep
 #' @importFrom stats deviance
 #' @export
-deviance.gau_fit <- function(object, ...) -2 * as.numeric(logLik(object))
+deviance.ad_fit <- function(object, ...) -2 * as.numeric(logLik(object))
 
 #' @rdname deviance.antedep
 #' @export
-deviance.cat_fit <- function(object, ...) -2 * as.numeric(logLik(object))
+deviance.gau_fit <- function(object, ...) deviance.ad_fit(object, ...)
 
 #' @rdname deviance.antedep
 #' @export
-deviance.inad_fit <- function(object, ...) -2 * as.numeric(logLik(object))
+deviance.cat_fit <- function(object, ...) deviance.ad_fit(object, ...)
 
-# ===========================================================================
-# confint
-# ===========================================================================
+#' @rdname deviance.antedep
+#' @export
+deviance.inad_fit <- function(object, ...) deviance.ad_fit(object, ...)
 
-#' Confidence intervals for antedependence model fits
+#' Confidence Intervals for Antedependence Model Fits
 #'
-#' Computes Wald confidence intervals for the parameters of a fitted
-#' antedependence model by delegating to the corresponding
-#' \code{ci_gau}, \code{ci_cat}, or \code{ci_inad} function.
+#' Returns a standard two-column matrix with \code{lower} and \code{upper}
+#' columns. The structured helpers \code{ci_gau()}, \code{ci_cat()}, and
+#' \code{ci_inad()} remain available for detailed inspection.
 #'
-#' @param object A fitted model object of class \code{gau_fit},
-#'   \code{cat_fit}, or \code{inad_fit}.
-#' @param parm Unused (all parameters are returned).
-#' @param level Confidence level; default \code{0.95}.
-#' @param y (\code{inad_fit} only) The original data matrix used for
-#'   fitting, required by \code{\link{ci_inad}}.
-#' @param ... Passed to the underlying \code{ci_*} function.
+#' @param object A fitted model object.
+#' @param parm Optional character vector of parameter names.
+#' @param level Confidence level.
+#' @param y Original data matrix, required for \code{inad_fit}.
+#' @param ... Passed to the underlying \code{ci_*} helper.
 #'
-#' @return For \code{gau_fit} and \code{cat_fit}: a matrix with columns
-#'   \code{lower} and \code{upper} and one row per parameter.
-#'   For \code{inad_fit}: the \code{inad_ci} list returned by
-#'   \code{\link{ci_inad}}.
-#'
-#' @examples
-#' \donttest{
-#' set.seed(1)
-#' y <- simulate_gau(n_subjects = 40, n_time = 5, order = 1, phi = 0.4)
-#' fit <- fit_gau(y, order = 1)
-#' confint(fit)
-#' }
+#' @return A matrix with columns \code{lower} and \code{upper}.
 #'
 #' @name confint.antedep
 NULL
@@ -361,69 +431,102 @@ NULL
 #' @rdname confint.antedep
 #' @importFrom stats confint
 #' @export
-confint.gau_fit <- function(object, parm, level = 0.95, ...) {
-    ci <- ci_gau(fit = object, level = level)
-    rows <- do.call(rbind, Filter(Negate(is.null), list(ci$mu, ci$phi, ci$sigma)))
-    if (is.null(rows)) return(matrix(NA_real_, nrow = 0, ncol = 2,
-                                     dimnames = list(NULL, c("lower", "upper"))))
-    mat <- matrix(c(rows$lower, rows$upper), ncol = 2,
-                  dimnames = list(rows$param, c("lower", "upper")))
-    mat
+confint.gau_fit <- function(object, parm = NULL, level = 0.95, ...) {
+    .ad_confint_matrix(ci_gau(fit = object, level = level, ...), parm = parm)
 }
 
 #' @rdname confint.antedep
 #' @export
-confint.cat_fit <- function(object, parm, level = 0.95, y = NULL, ...) {
-    ci_cat(fit = object, y = y, level = level)
+confint.cat_fit <- function(object, parm = NULL, level = 0.95, y = NULL, ...) {
+    .ad_confint_matrix(ci_cat(fit = object, y = y, level = level, ...), parm = parm)
 }
 
 #' @rdname confint.antedep
 #' @export
-confint.inad_fit <- function(object, parm, level = 0.95, y, ...) {
+confint.inad_fit <- function(object, parm = NULL, level = 0.95, y, ...) {
     if (missing(y)) {
-        stop(
-            "confint() for inad_fit requires the original data matrix 'y'; ",
-            "call ci_inad(y, fit, ...) directly.",
-            call. = FALSE
-        )
+        stop("confint() for inad_fit requires the original data matrix 'y'.", call. = FALSE)
     }
-    ci_inad(y = y, fit = object, level = level, ...)
+    .ad_confint_matrix(ci_inad(y = y, fit = object, level = level, ...), parm = parm)
 }
 
-# ===========================================================================
-# vcov
-# ===========================================================================
+#' Variance-Covariance Matrices for Antedependence Model Fits
+#'
+#' Returns a named diagonal matrix using the standard errors from the
+#' corresponding confidence-interval helper. Entries are \code{NA} when a
+#' standard error is not available.
+#'
+#' @param object A fitted model object.
+#' @param y Original data matrix, required for \code{inad_fit}.
+#' @param ... Passed to the underlying \code{ci_*} helper.
+#'
+#' @return A named square matrix.
+#'
+#' @name vcov.antedep
+NULL
 
-#' Variance-covariance matrix for Gaussian AD fits
-#'
-#' Returns an approximate variance-covariance matrix for the estimated
-#' parameters of a \code{gau_fit} object.  The matrix is block-diagonal
-#' (asymptotically exact for the Gaussian AD model given the factored
-#' likelihood) with entries derived from the closed-form standard errors
-#' used by \code{\link{ci_gau}}.
-#'
-#' @param object A \code{gau_fit} object.
-#' @param ... Unused.
-#'
-#' @return A named square matrix of parameter variances (diagonal entries)
-#'   and covariances (off-diagonal entries, all zero in the current
-#'   implementation).
-#'
-#' @examples
-#' \donttest{
-#' set.seed(1)
-#' y <- simulate_gau(n_subjects = 40, n_time = 5, order = 1, phi = 0.4)
-#' fit <- fit_gau(y, order = 1)
-#' vcov(fit)
-#' }
-#'
+#' @rdname vcov.antedep
 #' @importFrom stats vcov
 #' @export
 vcov.gau_fit <- function(object, ...) {
-    ci <- ci_gau(fit = object, level = 0.95)
-    rows <- do.call(rbind, Filter(Negate(is.null), list(ci$mu, ci$phi, ci$sigma)))
-    if (is.null(rows)) return(matrix(NA_real_, 0, 0))
-    vars <- rows$se^2
-    names(vars) <- rows$param
-    diag(vars)
+    .ad_vcov_from_ci(coef(object), ci_gau(fit = object, ...))
+}
+
+#' @rdname vcov.antedep
+#' @export
+vcov.cat_fit <- function(object, y = NULL, ...) {
+    .ad_vcov_from_ci(coef(object), ci_cat(fit = object, y = y, ...))
+}
+
+#' @rdname vcov.antedep
+#' @export
+vcov.inad_fit <- function(object, y, ...) {
+    if (missing(y)) {
+        stop("vcov() for inad_fit requires the original data matrix 'y'.", call. = FALSE)
+    }
+    .ad_vcov_from_ci(coef(object), ci_inad(y = y, fit = object, ...))
+}
+
+#' Likelihood-Ratio Comparisons for Nested AD Fits
+#'
+#' Compares one or more nested antedependence model fits in the order supplied.
+#'
+#' @param object First fitted model object.
+#' @param ... Additional fitted model objects.
+#' @param test Test label; only \code{"Chisq"} is currently supported.
+#'
+#' @details For INAD fits, a comparison between models of different orders is
+#' a boundary problem (the added thinning coefficients are zero under the
+#' smaller model), so no chi-square p-value is reported for it; see
+#' \code{\link{test_order_inad}}.
+#'
+#' @return An \code{anova} data frame.
+#'
+#' @name anova.antedep
+NULL
+
+#' @rdname anova.antedep
+#' @importFrom stats anova
+#' @export
+anova.gau_fit <- function(object, ..., test = "Chisq") .ad_anova(object, ..., test = test)
+
+#' @rdname anova.antedep
+#' @export
+anova.cat_fit <- function(object, ..., test = "Chisq") .ad_anova(object, ..., test = test)
+
+#' @rdname anova.antedep
+#' @export
+anova.inad_fit <- function(object, ..., test = "Chisq") {
+    out <- .ad_anova(object, ..., test = test)
+    ord <- vapply(c(list(object), list(...)), function(f) as.numeric(f$settings$order), numeric(1))
+    boundary <- c(FALSE, diff(ord) != 0)
+    if (any(boundary)) {
+        out[["Pr(>Chisq)"]][boundary] <- NA_real_
+        attr(out, "heading") <- c(
+            attr(out, "heading"),
+            paste("Order comparisons are boundary problems; no chi-square p-value is given",
+                  "for them (see test_order_inad).")
+        )
+    }
+    out
 }

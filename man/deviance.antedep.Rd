@@ -2,11 +2,14 @@
 % Please edit documentation in R/generics.R
 \name{deviance.antedep}
 \alias{deviance.antedep}
+\alias{deviance.ad_fit}
 \alias{deviance.gau_fit}
 \alias{deviance.cat_fit}
 \alias{deviance.inad_fit}
 \title{Deviance for Antedependence Model Fits}
 \usage{
+\method{deviance}{ad_fit}(object, ...)
+
 \method{deviance}{gau_fit}(object, ...)
 
 \method{deviance}{cat_fit}(object, ...)
@@ -14,8 +17,7 @@
 \method{deviance}{inad_fit}(object, ...)
 }
 \arguments{
-\item{object}{A fitted model object of class \code{gau_fit},
-\code{cat_fit}, or \code{inad_fit}.}
+\item{object}{A fitted model object.}
 
 \item{...}{Unused.}
 }
@@ -23,13 +25,5 @@
 A scalar deviance value.
 }
 \description{
-Returns the deviance \eqn{-2 \ell} for a fitted antedependence model.
-}
-\examples{
-\donttest{
-set.seed(1)
-y <- simulate_gau(n_subjects = 40, n_time = 5, order = 1, phi = 0.4)
-fit <- fit_gau(y, order = 1)
-deviance(fit)
-}
+Deviance for Antedependence Model Fits
 }

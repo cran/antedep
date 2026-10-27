@@ -11,10 +11,11 @@ test_order_inad(
   thinning = "binom",
   innovation = "pois",
   blocks = NULL,
-  use_chibar = TRUE,
+  reference = c("none", "chibar"),
   weights = NULL,
   fit_null = NULL,
   fit_alt = NULL,
+  use_chibar = NULL,
   ...
 )
 }
@@ -31,48 +32,65 @@ test_order_inad(
 
 \item{blocks}{Optional integer vector for block effects.}
 
-\item{use_chibar}{Logical; if TRUE, use chi-bar-square for boundary test.}
+\item{reference}{Reference distribution for a p-value. \code{"none"} (the
+default) reports no p-value, because under the null hypothesis the added
+thinning coefficients lie on the boundary of the parameter space and no
+calibrated reference has been established in general. \code{"chibar"}
+requests a working p-value from the binomial-weight chi-bar-square mixture,
+which assumes orthogonal added parameters with block-diagonal efficient
+information; see Details.}
 
-\item{weights}{Optional weights for chi-bar-square mixture.}
+\item{weights}{Optional weights for the chi-bar-square mixture (only with
+\code{reference = "chibar"}).}
 
 \item{fit_null}{Optional pre-computed null fit.}
 
 \item{fit_alt}{Optional pre-computed alternative fit.}
 
+\item{use_chibar}{Deprecated. \code{use_chibar = TRUE} is equivalent to
+\code{reference = "chibar"}.}
+
 \item{...}{Additional arguments passed to fit_inad.}
 }
 \value{
-A list with class \code{"test_order_inad"} containing:
+A list with class \code{c("test_order_inad", "htest")} containing:
 \describe{
-\item{method}{Inference method used (\code{"lrt"}).}
-\item{fit_null}{Fitted model under H0}
-\item{fit_alt}{Fitted model under H1}
-\item{statistic}{Test statistic value}
-\item{lrt_stat}{Likelihood ratio test statistic}
-\item{df}{Degrees of freedom}
-\item{p_value}{Chi-square p-value}
-\item{p_value_chibar}{Chi-bar-square p-value (if \code{use_chibar = TRUE})}
-\item{bic_null}{BIC under H0}
-\item{bic_alt}{BIC under H1}
-\item{bic_selected}{Which model BIC prefers}
+\item{statistic, lrt_stat}{Likelihood ratio statistic}
+\item{df}{Number of added thinning parameters}
+\item{p.value, p_value}{Working chi-bar-square p-value when
+\code{reference = "chibar"}; \code{NA} otherwise}
+\item{p_value_chibar}{Same as \code{p_value} (kept for compatibility)}
+\item{reference}{The reference used; \code{reference_note} describes its
+assumptions}
+\item{fit_null, fit_alt}{The two fits}
+\item{bic_null, bic_alt, bic_selected}{BIC values and the order BIC prefers}
 \item{table}{Two-row model comparison table}
 \item{settings}{Input and derived settings for the test}
 }
 }
 \description{
-Performs a likelihood ratio test comparing INAD models of different orders.
+Compares INAD models of consecutive orders by their likelihood ratio
+statistic and BIC.
 }
 \details{
-The test compares nested INAD models of orders \code{order_null} and
-\code{order_alt = order_null + 1} using:
-\deqn{\lambda = 2(\ell_{alt} - \ell_{null})}
-where \eqn{\ell_{null}} and \eqn{\ell_{alt}} are maximized log-likelihoods
-under the null and alternative models.
+The statistic is \eqn{\lambda = 2(\ell_{alt} - \ell_{null})}, where
+\eqn{\ell_{null}} and \eqn{\ell_{alt}} are the maximized log-likelihoods.
+Under the null hypothesis the \code{df} added thinning coefficients are zero,
+on the boundary of their parameter space, so the ordinary chi-square
+reference is not valid. The limiting distribution is a chi-bar-square
+mixture whose weights depend on the efficient information of the added
+parameters; the binomial weights \eqn{\binom{r}{j}2^{-r}} apply only when
+these are orthogonal with block-diagonal efficient information. For models
+with block effects (INADFE) the shared effects couple the time points and
+these weights have not been established; requesting
+\code{reference = "chibar"} then gives a warning. Calibrated p-values in
+general require further work, for example a parametric bootstrap, which is
+not implemented here. BIC comparisons are always reported.
 
-The default p-value uses the chi-square approximation with degrees of freedom
-matching the number of additional dependence parameters introduced under the
-higher-order model. When \code{use_chibar = TRUE}, a chi-bar-square mixture
-p-value is also reported for boundary-aware inference.
+The fits are computed with \code{\link{fit_inad}} unless supplied. For order
+2, fits from \code{\link{em_inad}} with \code{newton_polish = TRUE} are
+usually more precise and can be passed through \code{fit_null} and
+\code{fit_alt}.
 
 Missing-data inputs are supported through the same \code{na_action} options
 available in \code{\link{fit_inad}}. If \code{y} has missing values and
@@ -99,12 +117,18 @@ out <- test_order_inad(
   max_iter = 8
 )
 out$statistic
+out$bic_selected
+# Working chi-bar-square p-value for a baseline model:
+test_order_inad(y, order_null = 0, order_alt = 1, reference = "chibar",
+                fit_null = out$fit_null, fit_alt = out$fit_alt)$p_value
 }
 \references{
-Li, C. and Zimmerman, D.L. (2026). Integer-valued antedependence models for
-longitudinal count data. \emph{Biostatistics}.
+Self, S.G. and Liang, K.-Y. (1987). Asymptotic properties of maximum
+likelihood estimators and likelihood ratio tests under nonstandard
+conditions. \emph{Journal of the American Statistical Association}, 82,
+605-610.
 }
 \seealso{
-\code{\link{fit_inad}}, \code{\link{bic_order_inad}},
+\code{\link{fit_inad}}, \code{\link{em_inad}}, \code{\link{bic_order_inad}},
 \code{\link{test_stationarity_inad}}
 }

@@ -37,9 +37,9 @@ return a summary.
 \examples{
 \donttest{
 data("bolus_inad")
-tests <- run_homogeneity_tests_inad(bolus_inad$y, bolus_inad$blocks,
-                                     order = 1, thinning = "nbinom",
-                                     innovation = "bell")
+# First four occasions, to keep the example short
+tests <- run_homogeneity_tests_inad(bolus_inad$y[, 1:4], bolus_inad$blocks,
+                                     order = 1)
 print(tests)
 }
 

@@ -1,6 +1,6 @@
 # File: R/test_homogeneity_inad.R
 # Likelihood ratio tests for homogeneity across groups in INAD models
-# Based on Section 3.7 of Li & Zimmerman (2026) Biostatistics
+# Based on Li & Zimmerman (2026), manuscript under review
 
 #' Likelihood Ratio Test for Homogeneity Across Groups (INAD Data)
 #'
@@ -66,7 +66,7 @@
 #'
 #' @references
 #' Li, C. and Zimmerman, D.L. (2026). Integer-valued antedependence models for
-#' longitudinal count data. \emph{Biostatistics}. Section 3.7.
+#' longitudinal count data. Manuscript under review.
 #'
 #' @seealso \code{\link{fit_inad}}, \code{\link{test_order_inad}},
 #'   \code{\link{test_stationarity_inad}}
@@ -74,25 +74,23 @@
 #' @examples
 #' \donttest{
 #' data("bolus_inad")
-#' y <- bolus_inad$y
+#' y <- bolus_inad$y[, 1:4]  # first four occasions, to keep the example short
 #' blocks <- bolus_inad$blocks
 #'
 #' # Test for any group differences (M1 vs M3)
-#' test_all <- test_homogeneity_inad(y, blocks, order = 1,
-#'                                   thinning = "nbinom", innovation = "bell",
-#'                                   test = "all")
+#' test_all <- test_homogeneity_inad(y, blocks, order = 1, test = "all")
 #' print(test_all)
 #'
-#' # Test only for mean differences (M1 vs M2)
-#' test_mean <- test_homogeneity_inad(y, blocks, order = 1,
-#'                                    thinning = "nbinom", innovation = "bell",
-#'                                    test = "mean")
+#' # Test only for mean differences (M1 vs M2), reusing the pooled fit
+#' test_mean <- test_homogeneity_inad(y, blocks, order = 1, test = "mean",
+#'                                    fit_pooled = test_all$fit_null)
 #' print(test_mean)
 #'
-#' # Test for dependence differences given different means (M2 vs M3)
-#' test_dep <- test_homogeneity_inad(y, blocks, order = 1,
-#'                                   thinning = "nbinom", innovation = "bell",
-#'                                   test = "dependence")
+#' # Test for dependence differences given different means (M2 vs M3),
+#' # reusing the INADFE and heterogeneous fits
+#' test_dep <- test_homogeneity_inad(y, blocks, order = 1, test = "dependence",
+#'                                   fit_inadfe = test_mean$fit_alt,
+#'                                   fit_hetero = test_all$fit_alt)
 #' print(test_dep)
 #' }
 #'
@@ -361,7 +359,7 @@ test_homogeneity_inad <- function(y, blocks, order = 1,
   n_alpha <- switch(as.character(order),
                     "0" = 0,
                     "1" = n_time - 1,
-                    "2" = 2 * (n_time - 2))
+                    "2" = 2 * n_time - 3)
   n_theta <- n_time
 
   # NB innovation size params: count directly from the fit so this matches
@@ -422,9 +420,9 @@ test_homogeneity_inad <- function(y, blocks, order = 1,
 #' @examples
 #' \donttest{
 #' data("bolus_inad")
-#' tests <- run_homogeneity_tests_inad(bolus_inad$y, bolus_inad$blocks,
-#'                                      order = 1, thinning = "nbinom",
-#'                                      innovation = "bell")
+#' # First four occasions, to keep the example short
+#' tests <- run_homogeneity_tests_inad(bolus_inad$y[, 1:4], bolus_inad$blocks,
+#'                                      order = 1)
 #' print(tests)
 #' }
 #'

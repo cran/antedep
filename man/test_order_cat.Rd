@@ -87,11 +87,11 @@ y <- simulate_cat(200, 6, order = 1, n_categories = 2)
 
 # Test AD(0) vs AD(1)
 test_01 <- test_order_cat(y, order_null = 0, order_alt = 1)
-print(test_01$table)
+print(test_01)
 
 # Test AD(1) vs AD(2)
 test_12 <- test_order_cat(y, order_null = 1, order_alt = 2)
-print(test_12$table)
+print(test_12)
 
 # Using pre-fitted models
 fit0 <- fit_cat(y, order = 0)

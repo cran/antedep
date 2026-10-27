@@ -682,7 +682,8 @@ logL_inad_i <- function(
 #' @keywords internal
 .inad_make_thin_pmf <- function(prev, alpha, thinning, K) {
     out <- numeric(K + 1L)
-    k_max <- min(prev, K)
+    # Only binomial thinning bounds the thinned count by the previous count.
+    k_max <- if (thinning == "binom") min(prev, K) else K
     if (k_max >= 0L) {
         vals <- .thin_vec(0:k_max, prev, alpha, thinning)
         out[1:(k_max + 1L)] <- vals

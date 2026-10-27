@@ -129,7 +129,7 @@
     )
   )
   
-  class(result) <- "gau_fit"
+  class(result) <- c("gau_fit", "ad_fit")
   result
 }
 

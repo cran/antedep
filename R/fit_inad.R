@@ -2,11 +2,23 @@
 #'
 #' Fits INAD models by maximum likelihood.
 #'
-#' No fixed effect: time separable optimization using logL_inad_i with theta eliminated
-#' by moment equations for order 1 and 2.
+#' No fixed effect: time-separable optimization using logL_inad_i, with the
+#' thinning coefficients, innovation parameter, and negative binomial size of
+#' each time point optimized jointly from several starting values.
 #'
 #' Fixed effect: block coordinate descent using nloptr BOBYQA, updating tau, alpha,
 #' theta, and nb_inno_size if needed.
+#'
+#' Parameter spaces: thinning coefficients satisfy \eqn{0 \le \alpha \le 1}
+#' for binomial thinning and \eqn{\alpha \ge 0} for Poisson and negative
+#' binomial thinning, as in \code{\link{em_inad}}. Internally the optimizers use
+#' an upper limit of twice \eqn{\sum_s y_{si} / \sum_s y_{s,i-j}} for the
+#' latter, which cannot be active at a maximum because every stationary point
+#' satisfies \eqn{\alpha_{i,i-j} \le \sum_s y_{si} / \sum_s y_{s,i-j}}. A
+#' coefficient whose predecessor counts are all zero is not identifiable and is
+#' set to 0. The negative binomial innovation sizes are bounded above by the
+#' numerical cap \code{nb_inno_size_ub}; \code{\link{kkt_inad}} reports
+#' estimates on that cap and checks the first-order conditions of a fit.
 #'
 #' @param y Integer matrix n_sub by n_time.
 #' @param order Integer in \{0, 1, 2\}.
@@ -21,14 +33,27 @@
 #' @param init_theta Optional initial theta numeric length 1 or n_time.
 #' @param init_tau Optional initial tau. Scalar expands to c(0, x, ..., x). Vector forces first to 0.
 #' @param init_nb_inno_size Optional initial size for innovation nbinom, length 1 or n_time.
-#' @param nb_inno_size_ub Upper bound for innovation negative binomial size
-#'   parameter when \code{innovation = "nbinom"}. Default is 50.
+#' @param nb_inno_size_ub Upper bound (numerical cap) for the innovation
+#'   negative binomial size parameters when \code{innovation = "nbinom"}.
+#'   Default is 50. A size at the cap indicates innovations close to Poisson.
 #' @param na_action How to handle missing values:
 #'   \itemize{
 #'     \item \code{"fail"}: stop if any NA is present.
 #'     \item \code{"complete"}: fit using complete-case subjects only.
 #'     \item \code{"marginalize"}: maximize observed-data likelihood under MAR.
 #'   }
+#' @param constrain Optional time-invariance constraint, for example
+#'   \code{"alpha"} for a common thinning parameter, \code{"innovation"} for
+#'   constant innovation parameters, or \code{"all"}; see
+#'   \code{\link{test_stationarity_inad}} for the full list. When supplied, the
+#'   unconstrained model is fitted first to provide starting values, and the
+#'   constrained model is then refitted by maximizing the observed-data
+#'   log-likelihood jointly over all remaining free parameters (including
+#'   negative binomial innovation sizes). Default \code{NULL} (no constraint).
+#' @param newton_polish Logical; if \code{TRUE} (default) and the data are
+#'   complete, the fit is finished by Newton-Raphson steps using the exact score
+#'   and observed information (Louis' identity), holding estimates on the
+#'   boundary of the parameter space fixed when their score points outward.
 #'
 #' @return A list of class \code{"inad_fit"} containing:
 #' \describe{
@@ -73,7 +98,9 @@ fit_inad <- function(
         init_tau = 0.4,
         init_nb_inno_size = 1,
         nb_inno_size_ub = 50,
-        na_action = c("fail", "complete", "marginalize")
+        na_action = c("fail", "complete", "marginalize"),
+        constrain = NULL,
+        newton_polish = TRUE
 ) {
     thinning <- match.arg(thinning)
     innovation <- match.arg(innovation)
@@ -85,6 +112,23 @@ fit_inad <- function(
         stop("y must be a nonnegative integer matrix")
     }
     if (!(order %in% c(0, 1, 2))) stop("order must be 0, 1, or 2")
+    if (!is.null(constrain) && order == 0) stop("constrain requires order 1 or 2")
+
+    # Apply a time-invariance constraint, starting from the unconstrained fit.
+    finish <- function(fit_u, y_used, blocks_used) {
+        fit_u$settings$nb_inno_size_ub <- nb_inno_size_ub
+        if (newton_polish && order >= 1 && !anyNA(y_used)) {
+            fit_u <- .inad_polish_fit(fit_u, y_used, nb_inno_size_ub)
+        }
+        if (is.null(constrain)) return(fit_u)
+        .fit_constrained(
+            y = y_used, order = order, thinning = thinning, innovation = innovation,
+            blocks = blocks_used,
+            cinfo = .parse_constraint(constrain, order, ncol(y_used), innovation),
+            init_from = fit_u, na_action = na_action,
+            nb_inno_size_ub = nb_inno_size_ub, verbose = verbose
+        )
+    }
     if (!is.numeric(nb_inno_size_ub) || length(nb_inno_size_ub) != 1L ||
         !is.finite(nb_inno_size_ub) || nb_inno_size_ub <= 0) {
         stop("nb_inno_size_ub must be a positive finite scalar")
@@ -121,11 +165,11 @@ fit_inad <- function(
                 init_nb_inno_size = init_nb_inno_size,
                 nb_inno_size_ub = nb_inno_size_ub
             )
-            return(.finalize_inad_fit(
+            return(finish(.finalize_inad_fit(
                 fit, y = y, na_action = na_action,
                 blocks_id = blocks_id,
                 block_levels = if (is.null(blocks)) NULL else block_info$block_levels
-            ))
+            ), y, blocks))
         }
     }
 
@@ -140,7 +184,10 @@ fit_inad <- function(
             init_nb_inno_size = init_nb_inno_size,
             nb_inno_size_ub = nb_inno_size_ub
         )
-        return(.finalize_inad_fit(fit, y = y, na_action = na_action, blocks_id = NULL, block_levels = NULL))
+        return(finish(
+            .finalize_inad_fit(fit, y = y, na_action = na_action, blocks_id = NULL, block_levels = NULL),
+            y, NULL
+        ))
     }
 
     block_info <- .normalize_blocks(blocks, nrow(y))
@@ -160,11 +207,42 @@ fit_inad <- function(
         init_nb_inno_size = init_nb_inno_size,
         nb_inno_size_ub = nb_inno_size_ub
     )
-    .finalize_inad_fit(
+    finish(.finalize_inad_fit(
         fit, y = y, na_action = na_action,
         blocks_id = blocks_id,
         block_levels = block_info$block_levels
+    ), y, blocks)
+}
+
+#' Finish a fit by Newton steps with the exact score and information
+#'
+#' Accepts the polished parameters only if they do not decrease the
+#' log-likelihood, and refreshes the derived quantities of the fit.
+#' @keywords internal
+.inad_polish_fit <- function(fit, y, nb_inno_size_ub = 50) {
+    B <- if (!is.null(fit$tau) && length(fit$tau) > 1L) length(fit$tau) else 1L
+    pol <- tryCatch(
+        .inad_newton_polish(y, fit, blocks = if (B > 1L) fit$.blocks else NULL,
+                            nb_inno_size_ub = nb_inno_size_ub),
+        error = function(e) NULL
     )
+    if (is.null(pol) || !is.finite(pol$log_l) || pol$log_l < fit$log_l) return(fit)
+    # Copy values only, keeping the shape and names of the original fit.
+    fit$alpha[] <- as.numeric(pol$fit$alpha)
+    fit$theta[] <- as.numeric(pol$fit$theta)
+    if (!is.null(fit$nb_inno_size)) fit$nb_inno_size[] <- as.numeric(pol$fit$nb_inno_size)
+    if (B > 1L) fit$tau[] <- as.numeric(pol$fit$tau)
+    fit$log_l <- pol$log_l
+    if (!is.null(fit$loglik_i)) {
+        s <- fit$settings
+        fit$loglik_i <- vapply(seq_len(ncol(y)), function(i) {
+            logL_inad_i(y = y, i = i, order = s$order, thinning = s$thinning,
+                        innovation = s$innovation, alpha = fit$alpha, theta = fit$theta,
+                        nb_inno_size = fit$nb_inno_size)
+        }, numeric(1))
+    }
+    .finalize_inad_fit(fit, y = y, na_action = fit$settings$na_action,
+                       blocks_id = fit$.blocks, block_levels = fit$settings$block_levels)
 }
 
 #' @keywords internal
@@ -179,6 +257,9 @@ fit_inad <- function(
         fit$settings$n_blocks <- n_blocks
         fit$settings$block_levels <- block_levels
     }
+
+    fit$.y <- y
+    fit$.blocks <- blocks_id
 
     fit$n_obs <- sum(!is.na(y))
     fit$n_missing <- sum(is.na(y))
@@ -218,7 +299,7 @@ fit_inad <- function(
         fit$bic <- NA_real_
     }
 
-    class(fit) <- "inad_fit"
+    class(fit) <- c("inad_fit", "ad_fit")
     fit
 }
 
@@ -241,7 +322,15 @@ fit_inad <- function(
     N <- ncol(y)
     eps_pos <- 1e-8
     eps_alpha <- 1e-8
+    # Binomial thinning keeps alpha in (0, 1) by a logistic transform; Poisson
+    # and negative binomial thinning only need alpha > 0 (log transform).
+    is_bin <- thinning == "binom"
     alpha_ub <- 1 - eps_alpha
+    a_to_free <- function(a) {
+        if (is_bin) stats::qlogis(pmin(pmax(a / alpha_ub, eps_alpha), 1 - eps_alpha))
+        else log(pmax(a, eps_alpha))
+    }
+    a_from_free <- function(x) if (is_bin) alpha_ub * stats::plogis(x) else exp(x)
 
     # Normalize blocks and tau setup.
     if (!is.null(blocks)) {
@@ -318,7 +407,8 @@ fit_inad <- function(
             if (N >= 2) alpha_init[2:N] <- 0.3
         }
         alpha_init[1] <- 0
-        alpha_init <- pmin(pmax(alpha_init, 0), alpha_ub)
+        alpha_init <- pmax(alpha_init, 0)
+        if (is_bin) alpha_init <- pmin(alpha_init, alpha_ub)
     }
     if (order == 2) {
         if (!is.null(fit_init) && !is.null(fit_init$alpha)) {
@@ -349,7 +439,8 @@ fit_inad <- function(
         alpha_init[1, 1] <- 0
         alpha_init[1, 2] <- 0
         if (N >= 2) alpha_init[2, 2] <- 0
-        alpha_init <- pmin(pmax(alpha_init, 0), alpha_ub)
+        alpha_init <- pmax(alpha_init, 0)
+        if (is_bin) alpha_init <- pmin(alpha_init, alpha_ub)
     }
 
     tau_init <- NULL
@@ -372,12 +463,12 @@ fit_inad <- function(
         out <- c(log(theta_init))
         if (innovation == "nbinom") out <- c(out, log(nb_init))
         if (order == 1 && N >= 2) {
-            out <- c(out, stats::qlogis(pmin(pmax(alpha_init[2:N] / alpha_ub, eps_alpha), 1 - eps_alpha)))
+            out <- c(out, a_to_free(alpha_init[2:N]))
         }
         if (order == 2 && N >= 2) {
-            out <- c(out, stats::qlogis(pmin(pmax(alpha_init[2:N, 1] / alpha_ub, eps_alpha), 1 - eps_alpha)))
+            out <- c(out, a_to_free(alpha_init[2:N, 1]))
             if (N >= 3) {
-                out <- c(out, stats::qlogis(pmin(pmax(alpha_init[3:N, 2] / alpha_ub, eps_alpha), 1 - eps_alpha)))
+                out <- c(out, a_to_free(alpha_init[3:N, 2]))
             }
         }
         if (B > 1L) out <- c(out, tau_init[2:B])
@@ -400,7 +491,7 @@ fit_inad <- function(
             alpha <- rep(0, N)
             if (N >= 2) {
                 a_free <- par[idx:(idx + N - 2L)]
-                alpha[2:N] <- alpha_ub * stats::plogis(a_free)
+                alpha[2:N] <- a_from_free(a_free)
                 idx <- idx + N - 1L
             }
         }
@@ -408,12 +499,12 @@ fit_inad <- function(
             alpha <- matrix(0, nrow = N, ncol = 2)
             if (N >= 2) {
                 a1_free <- par[idx:(idx + N - 2L)]
-                alpha[2:N, 1] <- alpha_ub * stats::plogis(a1_free)
+                alpha[2:N, 1] <- a_from_free(a1_free)
                 idx <- idx + N - 1L
             }
             if (N >= 3) {
                 a2_free <- par[idx:(idx + N - 3L)]
-                alpha[3:N, 2] <- alpha_ub * stats::plogis(a2_free)
+                alpha[3:N, 2] <- a_from_free(a2_free)
                 idx <- idx + N - 2L
             }
         }
@@ -511,34 +602,34 @@ fit_inad_no_fe <- function(
         nb_inno_size_ub
 ) {
     N <- ncol(y)
-    eps_alpha <- 1e-10
     eps_pos <- 1e-10
-    alpha_ub <- 1 - eps_alpha
+    # Family-specific limits: alpha <= 1 only for binomial thinning.
+    ub1 <- .inad_alpha_upper(y, 1, thinning)
+    ub2 <- .inad_alpha_upper(y, 2, thinning)
+    unid1 <- .inad_alpha_unidentified(y, 1)
+    unid2 <- .inad_alpha_unidentified(y, 2)
 
     mean_y <- colMeans(y)
+    is_nb <- innovation == "nbinom"
+    is_bell <- innovation == "bell"
 
-    theta_from_inno_mean <- function(mu, innovation, eps_pos) {
-        if (!is.finite(mu) || mu <= eps_pos) return(NA_real_)
-        if (innovation == "bell") return(solve_theta_bell(mu))
-        mu
+    # Innovation parameter used by the pmf for a given innovation mean: the mean
+    # itself (Poisson, negative binomial) or the Bell parameter.
+    inno_par <- function(mu) {
+        mu <- max(mu, eps_pos)
+        if (is_bell) solve_theta_bell(mu) else mu
     }
 
-    default_theta0 <- function(innovation) {
-        if (innovation == "bell") return(1)
-        10
-    }
-
-    theta <- if (is.null(init_theta)) {
-        rep(default_theta0(innovation), N)
-    } else {
+    theta <- vapply(pmax(mean_y, 1), inno_par, numeric(1))
+    if (!is.null(init_theta)) {
         th <- as.numeric(init_theta)
         if (length(th) == 1L) th <- rep(th, N)
         if (length(th) != N) stop("init_theta must be length 1 or ncol(y)")
-        th
+        theta <- pmax(th, eps_pos)
     }
 
     nb_inno_size <- NULL
-    if (innovation == "nbinom") {
+    if (is_nb) {
         nb_inno_size <- as.numeric(init_nb_inno_size)
         if (length(nb_inno_size) == 1L) nb_inno_size <- rep(nb_inno_size, N)
         if (length(nb_inno_size) != N) stop("init_nb_inno_size must be length 1 or ncol(y)")
@@ -590,7 +681,7 @@ fit_inad_no_fe <- function(
     } else if (order == 1) {
         alpha1 <- init_alpha_order1(init_alpha, N)
         alpha1[1] <- 0
-        alpha1 <- pmin(pmax(alpha1, 0), alpha_ub)
+        alpha1 <- pmin(pmax(alpha1, 0), ub1)
         alpha_out <- alpha1
     } else {
         ainit <- init_alpha_order2(init_alpha, N)
@@ -599,362 +690,104 @@ fit_inad_no_fe <- function(
         alpha1[1] <- 0
         alpha2[1] <- 0
         if (N >= 2) alpha2[2] <- 0
-        alpha1 <- pmin(pmax(alpha1, 0), alpha_ub)
-        alpha2 <- pmin(pmax(alpha2, 0), alpha_ub)
+        alpha1 <- pmin(pmax(alpha1, 0), ub1)
+        alpha2 <- pmin(pmax(alpha2, 0), ub2)
         alpha_out <- cbind(alpha1, alpha2)
     }
 
     loglik_i <- rep(NA_real_, N)
     conv <- rep(NA_integer_, N)
 
+    # The log-likelihood is a sum of time-specific terms, each maximized over its
+    # own thinning coefficients, innovation parameter, and (negative binomial
+    # innovations) size. The innovation mean is optimized jointly with the
+    # thinning coefficients, so that a maximum with the innovation mean at its
+    # lower limit is reached.
     for (i in seq_len(N)) {
-        if (order == 0) {
-            if (innovation == "nbinom") {
-                obj0_nb <- function(par) {
-                    th <- pmax(par[1], eps_pos)
-                    sz <- pmax(par[2], eps_pos)
-                    ll <- tryCatch(
-                        logL_inad_i(
-                            y = y,
-                            i = i,
-                            order = 0,
-                            thinning = thinning,
-                            innovation = innovation,
-                            alpha = 0,
-                            theta = replace(theta, i, th),
-                            nb_inno_size = replace(nb_inno_size, i, sz)
-                        ),
-                        error = function(e) NA_real_
-                    )
-                    if (!is.finite(ll)) return(1e10)
-                    -ll
-                }
+        lags <- if (order == 0 || i == 1) integer(0) else if (order == 1 || i == 2) 1L else 1:2
+        L <- length(lags)
+        ord_i <- if (L == 0) 0 else order
 
-                par0 <- c(pmax(theta[i], eps_pos), pmax(nb_inno_size[i], eps_pos))
-                fit0 <- optim(
-                    par = par0,
-                    fn = obj0_nb,
-                    method = "L-BFGS-B",
-                    lower = c(eps_pos, eps_pos),
-                    upper = c(Inf, nb_inno_size_ub)
-                )
-
-                theta[i] <- pmax(fit0$par[1], eps_pos)
-                nb_inno_size[i] <- pmin(pmax(fit0$par[2], eps_pos), nb_inno_size_ub)
-                loglik_i[i] <- -fit0$value
-                conv[i] <- fit0$convergence
-            } else {
-                obj0_th <- function(th) {
-                    th <- pmax(th, eps_pos)
-                    ll <- tryCatch(
-                        logL_inad_i(
-                            y = y,
-                            i = i,
-                            order = 0,
-                            thinning = thinning,
-                            innovation = innovation,
-                            alpha = 0,
-                            theta = replace(theta, i, th),
-                            nb_inno_size = NULL
-                        ),
-                        error = function(e) NA_real_
-                    )
-                    if (!is.finite(ll)) return(1e10)
-                    -ll
-                }
-
-                fit0 <- optim(
-                    par = pmax(theta[i], eps_pos),
-                    fn = obj0_th,
-                    method = "L-BFGS-B",
-                    lower = eps_pos,
-                    upper = Inf
-                )
-
-                theta[i] <- pmax(fit0$par, eps_pos)
-                loglik_i[i] <- -fit0$value
-                conv[i] <- fit0$convergence
+        if (all(y[, i] == 0)) {
+            # Every count is zero: the maximum is on the boundary, with the
+            # thinning coefficients and the innovation mean at zero.
+            if (L > 0) {
+                if (order == 1) alpha_out[i] <- 0 else alpha_out[i, ] <- 0
             }
+            theta[i] <- inno_par(eps_pos)
+            loglik_i[i] <- logL_inad_i(y = y, i = i, order = ord_i, thinning = thinning,
+                                       innovation = innovation,
+                                       alpha = if (L == 0) 0 else alpha_out,
+                                       theta = theta, nb_inno_size = nb_inno_size)
+            conv[i] <- 0L
             next
         }
 
-        if (i == 1) {
-            if (innovation == "nbinom") {
-                obj1_nb <- function(par) {
-                    th <- pmax(par[1], eps_pos)
-                    sz <- pmax(par[2], eps_pos)
-
-                    th_try <- theta
-                    sz_try <- nb_inno_size
-                    th_try[1] <- th
-                    sz_try[1] <- sz
-
-                    ll <- tryCatch(
-                        logL_inad_i(
-                            y = y,
-                            i = 1,
-                            order = 0,
-                            thinning = thinning,
-                            innovation = innovation,
-                            alpha = 0,
-                            theta = th_try,
-                            nb_inno_size = sz_try
-                        ),
-                        error = function(e) NA_real_
-                    )
-                    if (!is.finite(ll)) return(1e10)
-                    -ll
-                }
-
-                fit1 <- optim(
-                    par = c(pmax(theta[1], eps_pos), pmax(nb_inno_size[1], eps_pos)),
-                    fn = obj1_nb,
-                    method = "L-BFGS-B",
-                    lower = c(eps_pos, eps_pos),
-                    upper = c(Inf, nb_inno_size_ub)
-                )
-
-                theta[1] <- pmax(fit1$par[1], eps_pos)
-                nb_inno_size[1] <- pmin(pmax(fit1$par[2], eps_pos), nb_inno_size_ub)
-                loglik_i[1] <- -fit1$value
-                conv[1] <- fit1$convergence
-            } else {
-                obj1_th <- function(th) {
-                    th <- pmax(th, eps_pos)
-                    th_try <- theta
-                    th_try[1] <- th
-
-                    ll <- tryCatch(
-                        logL_inad_i(
-                            y = y,
-                            i = 1,
-                            order = 0,
-                            thinning = thinning,
-                            innovation = innovation,
-                            alpha = 0,
-                            theta = th_try,
-                            nb_inno_size = NULL
-                        ),
-                        error = function(e) NA_real_
-                    )
-                    if (!is.finite(ll)) return(1e10)
-                    -ll
-                }
-
-                fit1 <- optim(
-                    par = pmax(theta[1], eps_pos),
-                    fn = obj1_th,
-                    method = "L-BFGS-B",
-                    lower = eps_pos,
-                    upper = Inf
-                )
-
-                theta[1] <- pmax(fit1$par, eps_pos)
-                loglik_i[1] <- -fit1$value
-                conv[1] <- fit1$convergence
-            }
-            next
+        get_alpha <- function() {
+            if (L == 0) return(numeric(0))
+            if (order == 1) alpha_out[i] else alpha_out[i, lags]
         }
-
-        if (order == 1 || i == 2) {
-            m1 <- mean_y[i - 1]
-
-            obj_a1 <- function(par) {
-                a <- pmin(pmax(par[1], 0), alpha_ub)
-                mu_inno <- mean_y[i] - a * m1
-                th <- theta_from_inno_mean(mu_inno, innovation, eps_pos)
-                if (!is.finite(th)) return(1e10)
-
-                alpha_try <- alpha_out
-                theta_try <- theta
-
-                if (order == 1) {
-                    alpha_try[i] <- a
-                } else {
-                    alpha_try[i, 1] <- a
-                }
-                theta_try[i] <- th
-
-                if (innovation == "nbinom") {
-                    sz <- pmax(par[2], eps_pos)
-                    nb_try <- nb_inno_size
-                    nb_try[i] <- sz
-                    ll <- tryCatch(
-                        logL_inad_i(
-                            y = y,
-                            i = i,
-                            order = order,
-                            thinning = thinning,
-                            innovation = innovation,
-                            alpha = alpha_try,
-                            theta = theta_try,
-                            nb_inno_size = nb_try
-                        ),
-                        error = function(e) NA_real_
-                    )
-                } else {
-                    ll <- tryCatch(
-                        logL_inad_i(
-                            y = y,
-                            i = i,
-                            order = order,
-                            thinning = thinning,
-                            innovation = innovation,
-                            alpha = alpha_try,
-                            theta = theta_try,
-                            nb_inno_size = NULL
-                        ),
-                        error = function(e) NA_real_
-                    )
-                }
-
-                if (!is.finite(ll)) return(1e10)
-                -ll
-            }
-
-            if (order == 1) {
-                alpha_start <- alpha_out[i]
-                if (innovation == "nbinom") {
-                    fit_i <- optim(
-                        par = c(alpha_start, nb_inno_size[i]),
-                        fn = obj_a1,
-                        method = "L-BFGS-B",
-                        lower = c(0, eps_pos),
-                        upper = c(alpha_ub, nb_inno_size_ub)
-                    )
-                    alpha_out[i] <- pmin(pmax(fit_i$par[1], 0), alpha_ub)
-                    nb_inno_size[i] <- pmin(pmax(fit_i$par[2], eps_pos), nb_inno_size_ub)
-                } else {
-                    fit_i <- optim(
-                        par = alpha_start,
-                        fn = function(a) obj_a1(c(a)),
-                        method = "L-BFGS-B",
-                        lower = 0,
-                        upper = alpha_ub
-                    )
-                    alpha_out[i] <- pmin(pmax(fit_i$par, 0), alpha_ub)
-                }
-            } else {
-                alpha_start <- alpha_out[i, 1]
-                if (innovation == "nbinom") {
-                    fit_i <- optim(
-                        par = c(alpha_start, nb_inno_size[i]),
-                        fn = obj_a1,
-                        method = "L-BFGS-B",
-                        lower = c(0, eps_pos),
-                        upper = c(alpha_ub, nb_inno_size_ub)
-                    )
-                    alpha_out[i, 1] <- pmin(pmax(fit_i$par[1], 0), alpha_ub)
-                    nb_inno_size[i] <- pmin(pmax(fit_i$par[2], eps_pos), nb_inno_size_ub)
-                } else {
-                    fit_i <- optim(
-                        par = alpha_start,
-                        fn = function(a) obj_a1(c(a)),
-                        method = "L-BFGS-B",
-                        lower = 0,
-                        upper = alpha_ub
-                    )
-                    alpha_out[i, 1] <- pmin(pmax(fit_i$par, 0), alpha_ub)
-                }
-            }
-
-            if (order == 1) {
-                mu_inno <- mean_y[i] - alpha_out[i] * m1
-                th <- theta_from_inno_mean(mu_inno, innovation, eps_pos)
-                if (!is.finite(th)) th <- eps_pos
-                theta[i] <- th
-            } else {
-                theta[i] <- pmax(mean_y[i] - alpha_out[i, 1] * m1, eps_pos)
-                alpha_out[i, 2] <- 0
-            }
-
-            loglik_i[i] <- -fit_i$value
-            conv[i] <- fit_i$convergence
-            next
-        }
-
-        m1 <- mean_y[i - 1]
-        m2 <- mean_y[i - 2]
-
-        obj_a12 <- function(par) {
-            a1 <- pmin(pmax(par[1], 0), alpha_ub)
-            a2 <- pmin(pmax(par[2], 0), alpha_ub)
-            mu_inno <- mean_y[i] - a1 * m1 - a2 * m2
-            th <- theta_from_inno_mean(mu_inno, innovation, eps_pos)
-            if (!is.finite(th)) return(1e10)
-
+        obj <- function(par) {
             alpha_try <- alpha_out
-            alpha_try[i, 1] <- a1
-            alpha_try[i, 2] <- a2
-
-            theta_try <- theta
-            theta_try[i] <- th
-
-            if (innovation == "nbinom") {
-                sz <- pmax(par[3], eps_pos)
-                nb_try <- nb_inno_size
-                nb_try[i] <- sz
-                ll <- tryCatch(
-                    logL_inad_i(
-                        y = y,
-                        i = i,
-                        order = order,
-                        thinning = thinning,
-                        innovation = innovation,
-                        alpha = alpha_try,
-                        theta = theta_try,
-                        nb_inno_size = nb_try
-                    ),
-                    error = function(e) NA_real_
-                )
-            } else {
-                ll <- tryCatch(
-                    logL_inad_i(
-                        y = y,
-                        i = i,
-                        order = order,
-                        thinning = thinning,
-                        innovation = innovation,
-                        alpha = alpha_try,
-                        theta = theta_try,
-                        nb_inno_size = NULL
-                    ),
-                    error = function(e) NA_real_
-                )
+            if (L > 0) {
+                if (order == 1) alpha_try[i] <- par[1] else alpha_try[i, lags] <- par[seq_len(L)]
             }
-
+            theta_try <- theta
+            theta_try[i] <- par[L + 1]
+            nb_try <- nb_inno_size
+            if (is_nb) nb_try[i] <- par[L + 2]
+            ll <- tryCatch(
+                logL_inad_i(y = y, i = i, order = ord_i, thinning = thinning,
+                            innovation = innovation,
+                            alpha = if (L == 0) 0 else alpha_try,
+                            theta = theta_try, nb_inno_size = nb_try),
+                error = function(e) NA_real_
+            )
             if (!is.finite(ll)) return(1e10)
             -ll
         }
 
-        if (innovation == "nbinom") {
-            fit_i <- optim(
-                par = c(alpha_out[i, 1], alpha_out[i, 2], nb_inno_size[i]),
-                fn = obj_a12,
-                method = "L-BFGS-B",
-                lower = c(0, 0, eps_pos),
-                upper = c(alpha_ub, alpha_ub, nb_inno_size_ub)
-            )
-            alpha_out[i, 1] <- pmin(pmax(fit_i$par[1], 0), alpha_ub)
-            alpha_out[i, 2] <- pmin(pmax(fit_i$par[2], 0), alpha_ub)
-            nb_inno_size[i] <- pmin(pmax(fit_i$par[3], eps_pos), nb_inno_size_ub)
-        } else {
-            fit_i <- optim(
-                par = c(alpha_out[i, 1], alpha_out[i, 2]),
-                fn = function(p) obj_a12(p),
-                method = "L-BFGS-B",
-                lower = c(0, 0),
-                upper = c(alpha_ub, alpha_ub)
-            )
-            alpha_out[i, 1] <- pmin(pmax(fit_i$par[1], 0), alpha_ub)
-            alpha_out[i, 2] <- pmin(pmax(fit_i$par[2], 0), alpha_ub)
+        # At a stationary point the innovation mean is at most mean_y[i].
+        ub_a <- c(ub1[i], ub2[i])[lags]
+        lower <- c(rep(0, L), eps_pos, if (is_nb) eps_pos)
+        upper <- c(ub_a, inno_par(2 * mean_y[i] + 1), if (is_nb) nb_inno_size_ub)
+
+        # Starting values: the current coefficients, the nested first-lag fit,
+        # and zero coefficients, each with the innovation mean implied by the
+        # sample moment equation.
+        start_from <- function(a0, sz0) {
+            a0 <- pmin(pmax(a0, 0), ub_a)
+            if (L > 0) {
+                lin <- sum(a0 * mean_y[i - lags])
+                if (lin >= 0.9 * mean_y[i] && lin > 0) a0 <- a0 * 0.5 * mean_y[i] / lin
+            }
+            m0 <- mean_y[i] - if (L > 0) sum(a0 * mean_y[i - lags]) else 0
+            c(a0, min(inno_par(max(m0, 0.05 * mean_y[i])), upper[L + 1]), if (is_nb) sz0)
         }
+        starts <- list(start_from(get_alpha(), if (is_nb) nb_inno_size[i]))
+        if (L > 0) {
+            lim1 <- if (mean_y[i - 1] > 0) min(ub_a[1], mean_y[i] / mean_y[i - 1]) else ub_a[1]
+            starts[[2]] <- start_from(c(0.5 * lim1, rep(0, L - 1)), 1)
+            starts[[3]] <- start_from(rep(0, L), 1)
+        } else if (is_nb) {
+            starts[[2]] <- start_from(numeric(0), 1)
+        }
+        fits <- lapply(starts, function(st) {
+            optim(par = st, fn = obj, method = "L-BFGS-B", lower = lower, upper = upper)
+        })
+        fit_i <- fits[[which.min(vapply(fits, function(f) f$value, numeric(1)))]]
 
-        mu_inno <- mean_y[i] - alpha_out[i, 1] * m1 - alpha_out[i, 2] * m2
-        th <- theta_from_inno_mean(mu_inno, innovation, eps_pos)
-        if (!is.finite(th)) th <- eps_pos
-        theta[i] <- th
-
+        if (L > 0) {
+            a_new <- pmin(pmax(fit_i$par[seq_len(L)], 0), ub_a)
+            if (order == 1) alpha_out[i] <- a_new else alpha_out[i, lags] <- a_new
+            # Not identifiable when all predecessor counts are zero: set to 0.
+            if (unid1[i]) {
+                if (order == 1) alpha_out[i] <- 0 else alpha_out[i, 1] <- 0
+            }
+            if (order == 2 && unid2[i]) alpha_out[i, 2] <- 0
+        }
+        theta[i] <- fit_i$par[L + 1]
+        if (is_nb) nb_inno_size[i] <- fit_i$par[L + 2]
         loglik_i[i] <- -fit_i$value
         conv[i] <- fit_i$convergence
     }
@@ -1009,9 +842,12 @@ fit_inad_fe <- function(
     if (any(blocks < 1)) stop("blocks must be positive integers starting at 1")
     B <- max(blocks)
 
-    eps_alpha <- 1e-10
     eps_pos <- 1e-10
-    alpha_ub <- 1 - eps_alpha
+    # Family-specific limits: alpha <= 1 only for binomial thinning.
+    ub1 <- .inad_alpha_upper(y, 1, thinning)
+    ub2 <- .inad_alpha_upper(y, 2, thinning)
+    unid1 <- .inad_alpha_unidentified(y, 1)
+    unid2 <- .inad_alpha_unidentified(y, 2)
 
     default_theta0 <- function(innovation) {
         if (innovation == "bell") return(1)
@@ -1077,7 +913,7 @@ fit_inad_fe <- function(
     if (order == 1) {
         alpha1 <- init_alpha_order1(init_alpha, N)
         alpha1[1] <- 0
-        alpha1 <- pmin(pmax(alpha1, 0), alpha_ub)
+        alpha1 <- pmin(pmax(alpha1, 0), ub1)
         alpha_full <- alpha1
     }
     if (order == 2) {
@@ -1087,8 +923,8 @@ fit_inad_fe <- function(
         alpha1[1] <- 0
         alpha2[1] <- 0
         if (N >= 2) alpha2[2] <- 0
-        alpha1 <- pmin(pmax(alpha1, 0), alpha_ub)
-        alpha2 <- pmin(pmax(alpha2, 0), alpha_ub)
+        alpha1 <- pmin(pmax(alpha1, 0), ub1)
+        alpha2 <- pmin(pmax(alpha2, 0), ub2)
         alpha_full <- cbind(alpha1, alpha2)
     }
 
@@ -1164,7 +1000,7 @@ fit_inad_fe <- function(
                 obj_a <- function(a_free) {
                     a_try <- alpha_full
                     a_try[1] <- 0
-                    a_try[2:N] <- pmin(pmax(a_free, 0), alpha_ub)
+                    a_try[2:N] <- pmin(pmax(a_free, 0), ub1[2:N])
                     -logL_inad(
                         y = y,
                         order = order,
@@ -1182,7 +1018,7 @@ fit_inad_fe <- function(
                     x0 = alpha_full[2:N],
                     eval_f = obj_a,
                     lb = rep(0, N - 1),
-                    ub = rep(alpha_ub, N - 1),
+                    ub = ub1[2:N],
                     opts = list(
                         algorithm = "NLOPT_LN_BOBYQA",
                         xtol_rel = 1e-6,
@@ -1190,8 +1026,9 @@ fit_inad_fe <- function(
                     )
                 )
 
-                alpha_full[2:N] <- pmin(pmax(opt_a$solution, 0), alpha_ub)
+                alpha_full[2:N] <- pmin(pmax(opt_a$solution, 0), ub1[2:N])
                 alpha_full[1] <- 0
+                alpha_full[unid1] <- 0
             }
         }
 
@@ -1205,8 +1042,8 @@ fit_inad_fe <- function(
                     a2[1] <- 0
                     a2[2] <- 0
 
-                    a1[2:N] <- pmin(pmax(a_free[seq_len(N - 1)], 0), alpha_ub)
-                    a2[3:N] <- pmin(pmax(a_free[(N):(N + (N - 3))], 0), alpha_ub)
+                    a1[2:N] <- pmin(pmax(a_free[seq_len(N - 1)], 0), ub1[2:N])
+                    a2[3:N] <- pmin(pmax(a_free[(N):(N + (N - 3))], 0), ub2[3:N])
 
                     a_try <- cbind(a1, a2)
 
@@ -1225,7 +1062,7 @@ fit_inad_fe <- function(
 
                 x0 <- c(alpha_full[2:N, 1], alpha_full[3:N, 2])
                 lb <- rep(0, length(x0))
-                ub <- rep(alpha_ub, length(x0))
+                ub <- c(ub1[2:N], ub2[3:N])
 
                 opt_a <- nloptr::nloptr(
                     x0 = x0,
@@ -1243,8 +1080,10 @@ fit_inad_fe <- function(
                 alpha_full[1, 1] <- 0
                 alpha_full[1, 2] <- 0
                 alpha_full[2, 2] <- 0
-                alpha_full[2:N, 1] <- pmin(pmax(sol[seq_len(N - 1)], 0), alpha_ub)
-                alpha_full[3:N, 2] <- pmin(pmax(sol[(N):(N + (N - 3))], 0), alpha_ub)
+                alpha_full[2:N, 1] <- pmin(pmax(sol[seq_len(N - 1)], 0), ub1[2:N])
+                alpha_full[3:N, 2] <- pmin(pmax(sol[(N):(N + (N - 3))], 0), ub2[3:N])
+                alpha_full[unid1, 1] <- 0
+                alpha_full[unid2, 2] <- 0
             }
         }
 
@@ -1359,5 +1198,14 @@ solve_theta_bell <- function(mu, lower = 0, upper = 10) {
     }
     if (!is.finite(fu) || fu < 0) return(NA_real_)
 
-    uniroot(f, c(lower, up))$root
+    # Bracket with uniroot, then polish by Newton's method so that the Bell
+    # parameter (and hence the likelihood) is a smooth function of the mean;
+    # uniroot's default tolerance alone leaves errors of order 1e-5.
+    theta <- uniroot(f, c(lower, up), tol = 1e-10)$root
+    for (k in seq_len(20)) {
+        step <- f(theta) / (exp(theta) * (1 + theta))
+        theta <- theta - step
+        if (abs(step) <= 1e-15 * max(1, abs(theta))) break
+    }
+    theta
 }

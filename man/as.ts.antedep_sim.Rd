@@ -5,7 +5,7 @@
 \alias{as.ts.gau_sim}
 \alias{as.ts.cat_sim}
 \alias{as.ts.inad_sim}
-\title{Convert antedependence simulation output to a time-series object}
+\title{Convert Antedependence Simulation Output to a Time-Series Object}
 \usage{
 \method{as.ts}{gau_sim}(x, ...)
 
@@ -14,30 +14,14 @@
 \method{as.ts}{inad_sim}(x, ...)
 }
 \arguments{
-\item{x}{A matrix of class \code{gau_sim}, \code{cat_sim}, or
-\code{inad_sim} as returned by the corresponding \code{simulate_*}
-function.}
+\item{x}{A matrix returned by \code{\link{simulate_gau}},
+\code{\link{simulate_cat}}, or \code{\link{simulate_inad}}.}
 
-\item{...}{Additional arguments passed to \code{\link[stats]{ts}}
-(e.g., \code{start}, \code{frequency}).}
+\item{...}{Additional arguments passed to \code{\link[stats]{ts}}.}
 }
 \value{
-A \code{ts} (\code{mts}) object with one column per subject.
+A \code{ts} or \code{mts} object.
 }
 \description{
-Converts the panel matrix returned by \code{\link{simulate_gau}},
-\code{\link{simulate_cat}}, or \code{\link{simulate_inad}} into an
-\code{mts} / \code{\link[stats]{ts}} object suitable for time-series
-functions.  Rows of the original matrix (subjects) become the columns of
-the returned object; columns (time points) become the rows.
-}
-\examples{
-\donttest{
-set.seed(1)
-y <- simulate_gau(n_subjects = 5, n_time = 10, order = 1, phi = 0.4)
-y_ts <- as.ts(y)
-class(y_ts)    # "mts" "ts" "matrix" "array"
-dim(y_ts)      # 10 x 5
-}
-
+Convert Antedependence Simulation Output to a Time-Series Object
 }

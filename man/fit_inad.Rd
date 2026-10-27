@@ -18,7 +18,9 @@ fit_inad(
   init_tau = 0.4,
   init_nb_inno_size = 1,
   nb_inno_size_ub = 50,
-  na_action = c("fail", "complete", "marginalize")
+  na_action = c("fail", "complete", "marginalize"),
+  constrain = NULL,
+  newton_polish = TRUE
 )
 }
 \arguments{
@@ -47,8 +49,9 @@ For order 2 matrix n_time by 2 or list(alpha1, alpha2).}
 
 \item{init_nb_inno_size}{Optional initial size for innovation nbinom, length 1 or n_time.}
 
-\item{nb_inno_size_ub}{Upper bound for innovation negative binomial size
-parameter when \code{innovation = "nbinom"}. Default is 50.}
+\item{nb_inno_size_ub}{Upper bound (numerical cap) for the innovation
+negative binomial size parameters when \code{innovation = "nbinom"}.
+Default is 50. A size at the cap indicates innovations close to Poisson.}
 
 \item{na_action}{How to handle missing values:
 \itemize{
@@ -56,6 +59,20 @@ parameter when \code{innovation = "nbinom"}. Default is 50.}
 \item \code{"complete"}: fit using complete-case subjects only.
 \item \code{"marginalize"}: maximize observed-data likelihood under MAR.
 }}
+
+\item{constrain}{Optional time-invariance constraint, for example
+\code{"alpha"} for a common thinning parameter, \code{"innovation"} for
+constant innovation parameters, or \code{"all"}; see
+\code{\link{test_stationarity_inad}} for the full list. When supplied, the
+unconstrained model is fitted first to provide starting values, and the
+constrained model is then refitted by maximizing the observed-data
+log-likelihood jointly over all remaining free parameters (including
+negative binomial innovation sizes). Default \code{NULL} (no constraint).}
+
+\item{newton_polish}{Logical; if \code{TRUE} (default) and the data are
+complete, the fit is finished by Newton-Raphson steps using the exact score
+and observed information (Louis' identity), holding estimates on the
+boundary of the parameter space fixed when their score points outward.}
 }
 \value{
 A list of class \code{"inad_fit"} containing:
@@ -77,11 +94,23 @@ A list of class \code{"inad_fit"} containing:
 Fits INAD models by maximum likelihood.
 }
 \details{
-No fixed effect: time separable optimization using logL_inad_i with theta eliminated
-by moment equations for order 1 and 2.
+No fixed effect: time-separable optimization using logL_inad_i, with the
+thinning coefficients, innovation parameter, and negative binomial size of
+each time point optimized jointly from several starting values.
 
 Fixed effect: block coordinate descent using nloptr BOBYQA, updating tau, alpha,
 theta, and nb_inno_size if needed.
+
+Parameter spaces: thinning coefficients satisfy \eqn{0 \le \alpha \le 1}
+for binomial thinning and \eqn{\alpha \ge 0} for Poisson and negative
+binomial thinning, as in \code{\link{em_inad}}. Internally the optimizers use
+an upper limit of twice \eqn{\sum_s y_{si} / \sum_s y_{s,i-j}} for the
+latter, which cannot be active at a maximum because every stationary point
+satisfies \eqn{\alpha_{i,i-j} \le \sum_s y_{si} / \sum_s y_{s,i-j}}. A
+coefficient whose predecessor counts are all zero is not identifiable and is
+set to 0. The negative binomial innovation sizes are bounded above by the
+numerical cap \code{nb_inno_size_ub}; \code{\link{kkt_inad}} reports
+estimates on that cap and checks the first-order conditions of a fit.
 }
 \examples{
 set.seed(1)

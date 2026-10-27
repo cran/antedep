@@ -31,7 +31,7 @@ set.seed(1)
 y <- simulate_gau(n_subjects = 80, n_time = 6, order = 1, phi = 0.4)
 ord <- bic_order_gau(y, max_order = 2)
 ord$best_order
-ord$table
+print(ord)
 }
 
 }

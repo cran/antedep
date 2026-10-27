@@ -543,7 +543,7 @@ test_timeinvariance_cat <- function(y, order = 1, blocks = NULL,
     )
   )
   
-  class(out) <- "cat_fit"
+  class(out) <- c("cat_fit", "ad_fit")
   out
 }
 

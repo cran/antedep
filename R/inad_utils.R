@@ -84,8 +84,11 @@
     if (yprev == 0) {
         return(as.numeric(k_vals == 0))
     }
-    p_nb <- 1 / (1 + a)
-    stats::dnbinom(k_vals, size = yprev, prob = p_nb)
+    # The mean parameterization, mu = yprev * a, is the same distribution. With
+    # prob = 1 / (1 + a), dnbinom would recover 1 - prob = a / (1 + a) by
+    # subtraction, losing about -log10(a) digits for small a (four correct
+    # digits at a = 1e-12, where EM leaves a coefficient at its lower limit).
+    stats::dnbinom(k_vals, size = yprev, mu = yprev * a)
 }
 
 #' Innovation probability vector
@@ -108,6 +111,63 @@
     # nbinom: size = sz (dispersion), mu = lam (mean)
     # See Supplement B.3 of the paper
     stats::dnbinom(u_vals, size = sz, mu = lam)
+}
+
+#' Upper limits for thinning coefficients
+#'
+#' Binomial thinning requires \eqn{\alpha \le 1}; Poisson and negative binomial
+#' thinning require only \eqn{\alpha \ge 0}. For the latter, Fisher's identity
+#' gives \eqn{\sum_s E(Z_{si,j} \mid y_s) = \alpha_{i,i-j} \sum_s y_{s,i-j}} at
+#' any stationary point with \eqn{\alpha_{i,i-j} > 0}, and \eqn{Z_{si,j} \le
+#' y_{si}}, so every stationary point satisfies \eqn{\alpha_{i,i-j} \le \sum_s
+#' y_{si} / \sum_s y_{s,i-j}}. Twice that ratio is used as a box limit for the
+#' optimizers: it is never active at a maximum, and it keeps the box finite for
+#' derivative-free methods. With \code{common = TRUE} the limit is for one
+#' coefficient shared by all occasions with the given lag, from the sums over
+#' those occasions. A coefficient whose predecessor counts are all zero is not
+#' identifiable; its limit is \code{1e-8}, and fitting functions set it to 0.
+#'
+#' @param y Count matrix (missing values are ignored in the sums, and the
+#'   factor 2 is then increased to 10).
+#' @param lag Thinning lag, 1 or 2.
+#' @param thinning One of "binom", "pois", "nbinom".
+#' @param common Logical; limit for a coefficient common to all occasions.
+#' @return A vector of length \code{ncol(y)} (0 at occasions without the lag),
+#'   or a scalar when \code{common = TRUE}.
+#' @keywords internal
+.inad_alpha_upper <- function(y, lag, thinning, common = FALSE) {
+    N <- ncol(y)
+    S <- colSums(y, na.rm = TRUE) / pmax(colSums(!is.na(y)), 1)
+    idx <- if (N > lag) (lag + 1L):N else integer(0)
+    tiny <- 1e-8
+    if (common) {
+        den <- sum(S[idx - lag])
+        if (den <= 0) return(tiny)
+        if (thinning == "binom") return(1 - 1e-10)
+        return(max((if (anyNA(y)) 10 else 2) * sum(S[idx]) / den, tiny))
+    }
+    ub <- numeric(N)
+    for (i in idx) {
+        den <- S[i - lag]
+        ub[i] <- if (den <= 0) tiny
+                 else if (thinning == "binom") 1 - 1e-10
+                 else max((if (anyNA(y)) 10 else 2) * S[i] / den, tiny)
+    }
+    ub
+}
+
+#' Thinning coefficients that are not identifiable
+#'
+#' @return Logical vector of length \code{ncol(y)}: TRUE where the counts at
+#'   lag \code{lag} before the occasion are all zero (or all missing).
+#' @keywords internal
+.inad_alpha_unidentified <- function(y, lag) {
+    N <- ncol(y)
+    out <- rep(FALSE, N)
+    if (N > lag) {
+        for (i in (lag + 1L):N) out[i] <- sum(y[, i - lag], na.rm = TRUE) <= 0
+    }
+    out
 }
 
 #' Unpack alpha parameters

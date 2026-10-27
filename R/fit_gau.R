@@ -258,7 +258,7 @@ fit_gau <- function(y, order = 1, blocks = NULL,
         )
     )
 
-    class(result) <- "gau_fit"
+    class(result) <- c("gau_fit", "ad_fit")
     result
 }
 

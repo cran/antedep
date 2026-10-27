@@ -315,7 +315,7 @@ test_stationarity_cat <- function(y, order = 1, blocks = NULL,
     )
   )
   
-  class(out) <- "cat_fit"
+  class(out) <- c("cat_fit", "ad_fit")
   out
 }
 
@@ -469,7 +469,7 @@ test_stationarity_cat <- function(y, order = 1, blocks = NULL,
 #' \donttest{
 #' y <- simulate_cat(200, 6, order = 1, n_categories = 2)
 #' result <- run_stationarity_tests_cat(y, order = 1)
-#' print(result$table)
+#' print(result)
 #' }
 #'
 #' @export
@@ -502,10 +502,32 @@ run_stationarity_tests_cat <- function(y, order = 1, blocks = NULL,
     stringsAsFactors = FALSE
   )
   
-  list(
+  out <- list(
     method = test,
     time_invariance = test_ti,
     stationarity = test_stat,
     table = table_df
   )
+  class(out) <- "stationarity_tests_cat"
+  out
+}
+
+#' Print Method for Categorical Stationarity Test Collections
+#'
+#' @param x Object returned by \code{\link{run_stationarity_tests_cat}}.
+#' @param digits Number of digits used for printed numeric columns.
+#' @param ... Unused.
+#'
+#' @return The input object, invisibly.
+#' @export
+print.stationarity_tests_cat <- function(x, digits = 4, ...) {
+  cat("Stationarity-Related Tests for Categorical AD\n")
+  cat("=============================================\n\n")
+  if (!is.null(x$table)) {
+    tbl <- x$table
+    num_cols <- vapply(tbl, is.numeric, logical(1))
+    tbl[num_cols] <- lapply(tbl[num_cols], round, digits = digits)
+    print(tbl, row.names = FALSE)
+  }
+  invisible(x)
 }

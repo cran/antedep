@@ -1,6 +1,7 @@
 #' Likelihood Ratio Test for Antedependence Order (INAD Data)
 #'
-#' Performs a likelihood ratio test comparing INAD models of different orders.
+#' Compares INAD models of consecutive orders by their likelihood ratio
+#' statistic and BIC.
 #'
 #' @param y Integer matrix with n_subjects rows and n_time columns.
 #' @param order_null Order under null hypothesis (0 or 1).
@@ -8,40 +9,55 @@
 #' @param thinning Thinning operator: "binom", "pois", or "nbinom".
 #' @param innovation Innovation distribution: "pois", "bell", or "nbinom".
 #' @param blocks Optional integer vector for block effects.
-#' @param use_chibar Logical; if TRUE, use chi-bar-square for boundary test.
-#' @param weights Optional weights for chi-bar-square mixture.
+#' @param reference Reference distribution for a p-value. \code{"none"} (the
+#'   default) reports no p-value, because under the null hypothesis the added
+#'   thinning coefficients lie on the boundary of the parameter space and no
+#'   calibrated reference has been established in general. \code{"chibar"}
+#'   requests a working p-value from the binomial-weight chi-bar-square mixture,
+#'   which assumes orthogonal added parameters with block-diagonal efficient
+#'   information; see Details.
+#' @param weights Optional weights for the chi-bar-square mixture (only with
+#'   \code{reference = "chibar"}).
 #' @param fit_null Optional pre-computed null fit.
 #' @param fit_alt Optional pre-computed alternative fit.
+#' @param use_chibar Deprecated. \code{use_chibar = TRUE} is equivalent to
+#'   \code{reference = "chibar"}.
 #' @param ... Additional arguments passed to fit_inad.
 #'
-#' @return A list with class \code{"test_order_inad"} containing:
+#' @return A list with class \code{c("test_order_inad", "htest")} containing:
 #' \describe{
-#'   \item{method}{Inference method used (\code{"lrt"}).}
-#'   \item{fit_null}{Fitted model under H0}
-#'   \item{fit_alt}{Fitted model under H1}
-#'   \item{statistic}{Test statistic value}
-#'   \item{lrt_stat}{Likelihood ratio test statistic}
-#'   \item{df}{Degrees of freedom}
-#'   \item{p_value}{Chi-square p-value}
-#'   \item{p_value_chibar}{Chi-bar-square p-value (if \code{use_chibar = TRUE})}
-#'   \item{bic_null}{BIC under H0}
-#'   \item{bic_alt}{BIC under H1}
-#'   \item{bic_selected}{Which model BIC prefers}
+#'   \item{statistic, lrt_stat}{Likelihood ratio statistic}
+#'   \item{df}{Number of added thinning parameters}
+#'   \item{p.value, p_value}{Working chi-bar-square p-value when
+#'     \code{reference = "chibar"}; \code{NA} otherwise}
+#'   \item{p_value_chibar}{Same as \code{p_value} (kept for compatibility)}
+#'   \item{reference}{The reference used; \code{reference_note} describes its
+#'     assumptions}
+#'   \item{fit_null, fit_alt}{The two fits}
+#'   \item{bic_null, bic_alt, bic_selected}{BIC values and the order BIC prefers}
 #'   \item{table}{Two-row model comparison table}
 #'   \item{settings}{Input and derived settings for the test}
 #' }
 #'
 #' @details
-#' The test compares nested INAD models of orders \code{order_null} and
-#' \code{order_alt = order_null + 1} using:
-#' \deqn{\lambda = 2(\ell_{alt} - \ell_{null})}
-#' where \eqn{\ell_{null}} and \eqn{\ell_{alt}} are maximized log-likelihoods
-#' under the null and alternative models.
+#' The statistic is \eqn{\lambda = 2(\ell_{alt} - \ell_{null})}, where
+#' \eqn{\ell_{null}} and \eqn{\ell_{alt}} are the maximized log-likelihoods.
+#' Under the null hypothesis the \code{df} added thinning coefficients are zero,
+#' on the boundary of their parameter space, so the ordinary chi-square
+#' reference is not valid. The limiting distribution is a chi-bar-square
+#' mixture whose weights depend on the efficient information of the added
+#' parameters; the binomial weights \eqn{\binom{r}{j}2^{-r}} apply only when
+#' these are orthogonal with block-diagonal efficient information. For models
+#' with block effects (INADFE) the shared effects couple the time points and
+#' these weights have not been established; requesting
+#' \code{reference = "chibar"} then gives a warning. Calibrated p-values in
+#' general require further work, for example a parametric bootstrap, which is
+#' not implemented here. BIC comparisons are always reported.
 #'
-#' The default p-value uses the chi-square approximation with degrees of freedom
-#' matching the number of additional dependence parameters introduced under the
-#' higher-order model. When \code{use_chibar = TRUE}, a chi-bar-square mixture
-#' p-value is also reported for boundary-aware inference.
+#' The fits are computed with \code{\link{fit_inad}} unless supplied. For order
+#' 2, fits from \code{\link{em_inad}} with \code{newton_polish = TRUE} are
+#' usually more precise and can be passed through \code{fit_null} and
+#' \code{fit_alt}.
 #'
 #' Missing-data inputs are supported through the same \code{na_action} options
 #' available in \code{\link{fit_inad}}. If \code{y} has missing values and
@@ -49,13 +65,13 @@
 #' \code{na_action = "marginalize"}.
 #'
 #' @references
-#' Li, C. and Zimmerman, D.L. (2026). Integer-valued antedependence models for
-#' longitudinal count data. \emph{Biostatistics}.
+#' Self, S.G. and Liang, K.-Y. (1987). Asymptotic properties of maximum
+#' likelihood estimators and likelihood ratio tests under nonstandard
+#' conditions. \emph{Journal of the American Statistical Association}, 82,
+#' 605-610.
 #'
-#' @seealso \code{\link{fit_inad}}, \code{\link{bic_order_inad}},
+#' @seealso \code{\link{fit_inad}}, \code{\link{em_inad}}, \code{\link{bic_order_inad}},
 #'   \code{\link{test_stationarity_inad}}
-#'
-#' @importFrom stats pchisq
 #'
 #' @examples
 #' set.seed(1)
@@ -77,12 +93,21 @@
 #'   max_iter = 8
 #' )
 #' out$statistic
+#' out$bic_selected
+#' # Working chi-bar-square p-value for a baseline model:
+#' test_order_inad(y, order_null = 0, order_alt = 1, reference = "chibar",
+#'                 fit_null = out$fit_null, fit_alt = out$fit_alt)$p_value
 #' @export
 test_order_inad <- function(y, order_null = 0, order_alt = 1,
                            thinning = "binom", innovation = "pois",
-                           blocks = NULL, use_chibar = TRUE, weights = NULL,
-                           fit_null = NULL, fit_alt = NULL, ...) {
-    data_name <- deparse(substitute(y))
+                           blocks = NULL, reference = c("none", "chibar"), weights = NULL,
+                           fit_null = NULL, fit_alt = NULL, use_chibar = NULL, ...) {
+  data_name <- deparse(substitute(y))
+  if (!is.null(use_chibar)) {
+    .Deprecated(msg = "use_chibar is deprecated; use reference = \"chibar\" or \"none\".")
+    reference <- if (isTRUE(use_chibar)) "chibar" else "none"
+  }
+  reference <- match.arg(reference)
   if (!is.matrix(y)) y <- as.matrix(y)
   y_obs <- y[!is.na(y)]
   if (any(y_obs < 0) || any(y_obs != floor(y_obs))) stop("y must contain non-negative integers")
@@ -99,7 +124,7 @@ test_order_inad <- function(y, order_null = 0, order_alt = 1,
   if (anyNA(y) && is.null(fit_args$na_action)) {
     fit_args$na_action <- "marginalize"
   }
-  
+
   if (is.null(fit_null)) {
     fit_null <- do.call(
       fit_inad,
@@ -118,41 +143,60 @@ test_order_inad <- function(y, order_null = 0, order_alt = 1,
       )
     )
   }
-  
+
   logL_null <- fit_null$log_l; logL_alt <- fit_alt$log_l
   lrt_stat <- 2 * (logL_alt - logL_null)
-  if (lrt_stat < 0) { warning("LRT negative, setting to 0"); lrt_stat <- 0 }
-  
+  # Nested fits can differ by rounding when the larger model's maximum is on
+  # the boundary; only a material shortfall indicates a fitting problem.
+  if (lrt_stat < -1e-6 * max(1, abs(logL_null))) {
+    warning("The higher-order fit has a smaller log-likelihood; LRT set to 0")
+  }
+  lrt_stat <- max(lrt_stat, 0)
+
   df <- if (order_null == 0) n_time - 1 else n_time - 2
-  p_value <- 1 - pchisq(lrt_stat, df = df)
-  p_value_chibar <- if (use_chibar && df > 0) .chi_bar_pvalue(lrt_stat, df, weights) else NA_real_
-  
+  if (reference == "chibar") {
+    if (n_blocks > 1L) {
+      warning("The binomial chi-bar-square weights have not been established for models ",
+              "with block effects; the p-value is a working approximation only.", call. = FALSE)
+    }
+    p_value <- if (df > 0) .chi_bar_pvalue(lrt_stat, df, weights) else NA_real_
+    reference_note <- paste0(
+      "working chi-bar-square reference with ", if (is.null(weights)) "binomial" else "user-supplied",
+      " weights; assumes orthogonal added parameters with block-diagonal efficient information",
+      if (n_blocks > 1L) "; weights not established for models with block effects" else "")
+  } else {
+    p_value <- NA_real_
+    reference_note <- paste0(
+      "no calibrated p-value: the added thinning coefficients are on the boundary under H0; ",
+      "compare BIC, or use reference = \"chibar\" for a working reference")
+  }
+
   bic_null <- bic_inad(fit_null, n_subjects); bic_alt <- bic_inad(fit_alt, n_subjects)
   bic_selected <- if (bic_null <= bic_alt) "null" else "alt"
-  
+
   table <- data.frame(model = c(paste0("Order ", order_null), paste0("Order ", order_alt)),
                       order = c(order_null, order_alt), logLik = c(logL_null, logL_alt),
-                      n_params = c(.count_params_inad(order_null, n_time, n_blocks, thinning, innovation),
-                                   .count_params_inad(order_alt, n_time, n_blocks, thinning, innovation)),
+                      n_params = c(.count_params_inad_fit(fit_null), .count_params_inad_fit(fit_alt)),
                       BIC = c(bic_null, bic_alt), stringsAsFactors = FALSE)
-  
+
   result <- list(
     # htest required slots
-    statistic  = stats::setNames(lrt_stat, "chi-squared"),
-    parameter  = stats::setNames(df, "df"),
+    statistic  = stats::setNames(lrt_stat, "LR"),
+    parameter  = stats::setNames(df, "added parameters"),
     p.value    = p_value,
     method     = paste0("LRT for INAD Order (H0: Order ", order_null,
-                        " vs H1: Order ", order_alt, ")"),
+                        " vs H1: Order ", order_alt, "); ", reference_note),
     data.name  = data_name,
     # additional slots
     inference  = "lrt",
     fit_null = fit_null, fit_alt = fit_alt,
     lrt_stat = lrt_stat, df = df,
-    p_value = p_value, p_value_chibar = p_value_chibar,
+    p_value = p_value, p_value_chibar = p_value,
+    reference = reference, reference_note = reference_note,
     bic_null = bic_null, bic_alt = bic_alt, bic_selected = bic_selected, table = table,
     settings = list(order_null = order_null, order_alt = order_alt, thinning = thinning,
                     innovation = innovation, n_subjects = n_subjects, n_time = n_time,
-                    n_blocks = n_blocks, use_chibar = use_chibar))
+                    n_blocks = n_blocks, reference = reference))
   class(result) <- c("test_order_inad", "htest")
   result
 }
@@ -163,26 +207,44 @@ print.test_order_inad <- function(x, digits = 4, ...) {
   cat("\nLikelihood Ratio Test for INAD Model Order\n\n")
   cat("H0: Order", x$settings$order_null, " vs H1: Order", x$settings$order_alt, "\n\n")
   print(x$table, row.names = FALSE, digits = digits)
-  cat("\nLRT:", round(stat, digits), " df:", x$df, " p-value:", format.pval(x$p_value, digits = digits))
-  if (!is.na(x$p_value_chibar)) cat(" p-value(chi-bar):", format.pval(x$p_value_chibar, digits = digits))
-  cat("\nBIC selects: Order", ifelse(x$bic_selected == "null", x$settings$order_null, x$settings$order_alt), "\n")
+  cat("\nLR statistic:", round(stat, digits), " added parameters:", x$df, "\n")
+  if (identical(x$reference, "chibar")) {
+    cat("Working p-value (chi-bar-square):", format.pval(x$p_value, digits = digits), "\n")
+  }
+  if (!is.null(x$reference_note)) cat("Note:", x$reference_note, "\n")
+  cat("BIC selects: Order", ifelse(x$bic_selected == "null", x$settings$order_null, x$settings$order_alt), "\n")
   invisible(x)
 }
 
+#' Upper-tail probability of a chi-bar-square mixture
+#'
+#' The j = 0 component is a point mass at zero, so its upper-tail probability
+#' P(chi^2_0 >= stat) is 1 when stat <= 0 and 0 when stat > 0.
+#'
 #' @keywords internal
 .chi_bar_pvalue <- function(stat, r, weights = NULL) {
-  if (r == 0) return(as.numeric(stat > 0))
+  tail0 <- as.numeric(stat <= 0)
+  if (r == 0) return(tail0)
   if (is.null(weights)) weights <- choose(r, 0:r) * 2^(-r)
-  tails <- vapply(0:r, function(j) if (j == 0) as.numeric(stat > 0) else 1 - pchisq(stat, df = j), numeric(1))
+  tails <- vapply(0:r, function(j) {
+    if (j == 0) tail0 else stats::pchisq(stat, df = j, lower.tail = FALSE)
+  }, numeric(1))
   sum(weights * tails)
 }
 
+#' Free-parameter count of an unconstrained INAD model
+#'
+#' Matches \code{.count_params_inad_fit()}: order 2 has \code{2 * n_time - 3}
+#' thinning parameters (\eqn{\alpha_{2,1}}, then two per time point), and negative
+#' binomial innovations carry one size parameter per time point, as fitted by
+#' \code{fit_inad()}.
+#'
 #' @keywords internal
 .count_params_inad <- function(order, n_time, n_blocks, thinning, innovation) {
-  n_alpha <- switch(as.character(order), "0" = 0, "1" = n_time - 1, "2" = 2 * (n_time - 2))
+  n_alpha <- switch(as.character(order), "0" = 0, "1" = n_time - 1, "2" = 2 * n_time - 3)
   n_theta <- n_time
   n_tau <- max(0, n_blocks - 1)
-  n_nb_inno <- if (innovation == "nbinom") 1 else 0
+  n_nb_inno <- if (innovation == "nbinom") n_time else 0
   n_alpha + n_theta + n_tau + n_nb_inno
 }
 
@@ -231,7 +293,7 @@ bic_order_inad <- function(y, max_order = 2, thinning = "binom", innovation = "p
                                                  innovation = innovation, blocks = blocks, ...))
   names(fits) <- paste0("order_", orders)
   table <- data.frame(order = orders, logLik = sapply(fits, function(f) f$log_l),
-                      n_params = sapply(orders, function(ord) .count_params_inad(ord, n_time, n_blocks, thinning, innovation)),
+                      n_params = sapply(fits, .count_params_inad_fit),
                       stringsAsFactors = FALSE)
   table$BIC <- -2 * table$logLik + table$n_params * log(n_subjects)
   bic_vals <- stats::setNames(table$BIC, paste0("order_", orders))

@@ -51,6 +51,12 @@ test_that("ci_inad behaves correctly on bolus_inad", {
             expect_true(all(ci$tau$lower[finite_bounds] <= ci$tau$upper[finite_bounds]))
             expect_true(all(ci$tau$lower[finite_bounds] <= ci$tau$est[finite_bounds]))
             expect_true(all(ci$tau$est[finite_bounds] <= ci$tau$upper[finite_bounds]))
+            z <- stats::qnorm(1 - (1 - ci$level) / 2)
+            expect_equal(
+                ci$tau$se[finite_bounds],
+                (ci$tau$upper[finite_bounds] - ci$tau$lower[finite_bounds]) / (2 * z),
+                tolerance = 1e-8
+            )
         }
     }
 })

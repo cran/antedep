@@ -249,7 +249,7 @@ em_cat <- function(y, order = 1, blocks = NULL, homogeneous = TRUE,
     )
   )
 
-  class(out) <- "cat_fit"
+  class(out) <- c("cat_fit", "ad_fit")
   out
 }
 

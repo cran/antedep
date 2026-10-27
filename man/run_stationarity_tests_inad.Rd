@@ -33,7 +33,13 @@ run_stationarity_tests_inad(
 A list with class "stationarity_tests_inad".
 }
 \description{
-Run All Stationarity-Related Tests for INAD
+Runs the standard battery of time-invariance tests against a common
+unconstrained fit. For order 1 the constraints are \code{"alpha"},
+\code{"theta"}, and \code{"both"}; with negative binomial innovations they
+are \code{"alpha"}, \code{"innovation"} (\code{theta} and \code{kappa}
+jointly), and \code{"all"}. For order 2 they are \code{"alpha1"},
+\code{"alpha2"}, \code{"alpha"}, \code{"theta"} (or \code{"innovation"}),
+and \code{"all"}.
 }
 \examples{
 set.seed(1)

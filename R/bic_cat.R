@@ -54,7 +54,7 @@ aic_cat <- function(fit) {
 #' \donttest{
 #' y <- simulate_cat(100, 5, order = 1, n_categories = 2)
 #' result <- bic_order_cat(y, max_order = 2)
-#' print(result$table)
+#' print(result)
 #' print(result$best_order)
 #' }
 #'
@@ -110,11 +110,35 @@ bic_order_cat <- function(y, max_order = 2, blocks = NULL, homogeneous = TRUE,
   best_order <- orders[best_idx]
   bic_vals <- stats::setNames(table_df$bic, paste0("order_", orders))
   
-  list(
+  out <- list(
     table = table_df,
     bic = bic_vals,
     best_order = best_order,
     criterion = criterion,
     fits = fits
   )
+  class(out) <- "bic_order_cat"
+  out
+}
+
+#' Print Method for Categorical BIC Order Selection
+#'
+#' @param x Object returned by \code{\link{bic_order_cat}}.
+#' @param digits Number of digits used for printed numeric columns.
+#' @param ... Unused.
+#'
+#' @return The input object, invisibly.
+#' @export
+print.bic_order_cat <- function(x, digits = 4, ...) {
+  cat("BIC-Based Order Selection for Categorical AD\n")
+  cat("============================================\n\n")
+  if (!is.null(x$table)) {
+    tbl <- x$table
+    num_cols <- vapply(tbl, is.numeric, logical(1))
+    tbl[num_cols] <- lapply(tbl[num_cols], round, digits = digits)
+    print(tbl, row.names = FALSE)
+  }
+  criterion <- if (!is.null(x$criterion)) toupper(x$criterion) else "BIC"
+  cat("\nBest order by", criterion, ":", x$best_order, "\n")
+  invisible(x)
 }

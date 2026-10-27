@@ -2,7 +2,7 @@
 % Please edit documentation in R/lrt_stationarity_inad.R
 \name{test_stationarity_inad}
 \alias{test_stationarity_inad}
-\title{Likelihood Ratio Test for Stationarity (INAD Data)}
+\title{Likelihood Ratio Test for Time-Invariance (INAD Data)}
 \usage{
 test_stationarity_inad(
   y,
@@ -27,21 +27,29 @@ test_stationarity_inad(
 
 \item{blocks}{Optional integer vector for block effects.}
 
-\item{constrain}{Which parameters to constrain: "alpha", "theta", "both" for order 1;
-"alpha1", "alpha2", "alpha", "theta", "all" for order 2.}
+\item{constrain}{Which parameters to constrain to be constant over time. A
+character vector built from \code{"alpha"}, \code{"alpha1"},
+\code{"alpha2"} (order 2 only), \code{"theta"}, and, for
+\code{innovation = "nbinom"}, \code{"kappa"} (alias
+\code{"nb_inno_size"}). The shortcuts \code{"innovation"} (\code{theta}
+and, for negative binomial innovations, \code{kappa}), \code{"both"}
+(\code{alpha} and \code{theta}), and \code{"all"} (every time-varying
+parameter, including \code{kappa}) are also accepted.}
 
 \item{fit_unconstrained}{Optional pre-computed unconstrained fit.}
 
 \item{verbose}{Logical; if TRUE, print progress.}
 
-\item{...}{Additional arguments.}
+\item{...}{Additional arguments passed to \code{\link{fit_inad}} for the
+unconstrained fit (for example \code{max_iter}, \code{tol},
+\code{na_action}, \code{nb_inno_size_ub}).}
 }
 \value{
 A list with class \code{"test_stationarity_inad"} containing:
 \describe{
 \item{method}{Inference method used (\code{"lrt"}).}
 \item{fit_unconstrained}{Unconstrained INAD fit}
-\item{fit_constrained}{Constrained INAD fit}
+\item{fit_constrained}{Constrained INAD fit, an \code{inad_fit} object}
 \item{constraint}{Human-readable null constraint description}
 \item{statistic}{Test statistic value}
 \item{lrt_stat}{Likelihood ratio test statistic}
@@ -58,13 +66,21 @@ Tests whether time-varying INAD parameters can be constrained to be constant
 over time.
 }
 \details{
-For order 1, the test can constrain \code{alpha}, \code{theta}, or both.
-For order 2, it can constrain \code{alpha1}, \code{alpha2},
-\code{alpha} (both), \code{theta}, or all supported time-varying
-parameters.
+The constrained model is refitted by maximizing the observed-data
+log-likelihood jointly over every parameter that remains free under the
+null hypothesis, including the negative binomial innovation sizes when they
+are not themselves constrained. Fitting alternates blockwise BOBYQA updates
+with a joint BOBYQA refinement until the log-likelihood stabilizes.
 
-Degrees of freedom are computed from the number of equality constraints
-imposed under the null model relative to the unconstrained model.
+For order 2, \code{"alpha1"} constrains the lag-1 coefficients
+\eqn{\alpha_{i,i-1}}, \eqn{i = 2, \ldots, n}, to a common value, and
+\code{"alpha2"} constrains the lag-2 coefficients \eqn{\alpha_{i,i-2}},
+\eqn{i = 3, \ldots, n}.
+
+Degrees of freedom are the number of equality constraints imposed under the
+null model relative to the unconstrained model. Because the constrained
+parameters are interior under the null, the usual chi-square reference
+applies.
 
 Missing-data inputs are supported through the same \code{na_action} options
 available in \code{\link{fit_inad}}. If \code{y} has missing values and
@@ -94,7 +110,7 @@ out$p_value
 }
 \references{
 Li, C. and Zimmerman, D.L. (2026). Integer-valued antedependence models for
-longitudinal count data. \emph{Biostatistics}.
+longitudinal count data. Manuscript under review.
 }
 \seealso{
 \code{\link{run_stationarity_tests_inad}},

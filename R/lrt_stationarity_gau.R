@@ -710,6 +710,6 @@ print.stationarity_tests_gau <- function(x, digits = 4, ...) {
         )
     )
 
-    class(out) <- "gau_fit"
+    class(out) <- c("gau_fit", "ad_fit")
     out
 }

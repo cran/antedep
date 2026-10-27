@@ -5,7 +5,8 @@
 #' Compute BIC or AIC for a fitted Gaussian, categorical, or INAD
 #' antedependence model. Since `logLik()` methods are registered for all three
 #' fit classes, `stats::AIC()` and `stats::BIC()` generics also work directly
-#' and are preferred.
+#' and are preferred in new code. The family-specific helpers are retained as
+#' thin compatibility wrappers for existing code.
 #'
 #' @param fit A fitted model object returned by \code{\link{fit_gau}},
 #'   \code{\link{fit_cat}}, or \code{\link{fit_inad}}.

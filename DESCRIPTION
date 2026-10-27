@@ -1,6 +1,6 @@
 Package: antedep
 Title: Antedependence Models for Longitudinal Data
-Version: 0.2.0
+Version: 0.3.1
 Authors@R: c(
     person("Chenyang", "Li", email = "chenyang-li@uiowa.edu", 
            role = c("aut", "cre")),
@@ -17,9 +17,9 @@ Description: Fitting, simulation, and inference for antedependence models for
     and flexible innovation distributions (Poisson, Bell, negative binomial),
     categorical antedependence models for discrete-state longitudinal outcomes,
     and Gaussian antedependence (AD) models for continuous data. Implements
-    maximum likelihood estimation via time-separable optimization and block
-    coordinate descent, with confidence intervals based on Louis' identity and
-    profile likelihood.
+    maximum likelihood estimation via time-separable optimization, block
+    coordinate descent, and the EM algorithm, with confidence intervals based
+    on Louis' identity, the observed-data Hessian, and profile likelihood.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Language: en-US
@@ -27,13 +27,13 @@ RoxygenNote: 7.3.3
 URL: https://tanchyking.github.io/antedep/,
         https://github.com/TanchyKing/antedep
 BugReports: https://github.com/TanchyKing/antedep/issues
-Imports: nloptr (>= 1.2.0), stats, ggplot2, MASS
-Suggests: knitr, rmarkdown, testthat (>= 3.0.0)
+Imports: nloptr (>= 1.2.0), numDeriv, stats, ggplot2, MASS
+Suggests: knitr, lmtest, rmarkdown, testthat (>= 3.0.0)
 Config/testthat/edition: 3
 Depends: R (>= 3.5)
 LazyData: true
 VignetteBuilder: knitr
 NeedsCompilation: no
-Packaged: 2026-05-09 05:30:44 UTC; Tanch
+Packaged: 2026-10-27 06:03:01 UTC; Tanch
 Repository: CRAN
-Date/Publication: 2026-05-09 14:30:02 UTC
+Date/Publication: 2026-10-27 08:20:02 UTC

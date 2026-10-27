@@ -63,8 +63,9 @@ y_gau <- simulate_gau(n_subjects = 20, n_time = 4, order = 1, phi = 0.5)
 fit_gau1 <- fit_gau(y_gau, order = 1)
 fit_gau2 <- fit_gau(y_gau, order = 2)
 
-c(order1_logLik = fit_gau1$log_l, order2_logLik = fit_gau2$log_l)
-bic_order_gau(y_gau, max_order = 2)$table
+logLik(fit_gau1)
+BIC(fit_gau1, fit_gau2)
+bic_order_gau(y_gau, max_order = 2)
 ```
 
 ```{r}
@@ -82,7 +83,7 @@ fit_gau_em <- fit_gau(y_gau_miss, order = 1, na_action = "em", em_max_iter = 10)
 fit_gau_cc <- fit_gau(y_gau_miss, order = 1, na_action = "complete")
 
 c(em_logLik = fit_gau_em$log_l, complete_case_logLik = fit_gau_cc$log_l)
-fit_gau_em$pct_missing
+summary(fit_gau_em)
 ```
 
 ### AD mean and covariance structure tests (complete data)
@@ -125,8 +126,8 @@ y_inad <- simulate_inad(
 )
 
 fit_inad1 <- fit_inad(y_inad, order = 1, thinning = "binom", innovation = "pois")
-fit_inad1$log_l
-bic_order_inad(y_inad, max_order = 2, thinning = "binom", innovation = "pois")$table
+logLik(fit_inad1)
+bic_order_inad(y_inad, max_order = 2, thinning = "binom", innovation = "pois")
 ```
 
 ### Missing-data INAD fit
@@ -144,14 +145,15 @@ fit_inad_miss <- fit_inad(
   max_iter = 10
 )
 
-fit_inad_miss$log_l
-fit_inad_miss$pct_missing
+summary(fit_inad_miss)
 ```
 
 ```{r}
 # Missing-data LRTs (observed-data likelihood)
 blocks_inad <- rep(1:2, each = nrow(y_inad_miss) / 2)
-test_order_inad(y_inad_miss, order_null = 0, order_alt = 1, blocks = blocks_inad)$p_value
+# Order comparisons are boundary problems: compare BIC (no calibrated p-value)
+ord_inad <- test_order_inad(y_inad_miss, order_null = 0, order_alt = 1, blocks = blocks_inad)
+c(LR = ord_inad$lrt_stat, BIC_order0 = ord_inad$bic_null, BIC_order1 = ord_inad$bic_alt)
 test_homogeneity_inad(y_inad_miss, blocks = blocks_inad, order = 1, test = "mean")$p_value
 ```
 
@@ -162,16 +164,15 @@ test_homogeneity_inad(y_inad_miss, blocks = blocks_inad, order = 1, test = "mean
 ```{r}
 y_cat <- simulate_cat(n_subjects = 20, n_time = 4, order = 1, n_categories = 3)
 fit_cat1 <- fit_cat(y_cat, order = 1)
-fit_cat1$log_l
+logLik(fit_cat1)
 
 # Wald CIs (complete data)
-ci_cat1 <- ci_cat(fit_cat1, parameters = "marginal")
-head(ci_cat1$marginal, 3)
+head(confint(fit_cat1), 3)
 ```
 
 ```{r}
 # Order tests for CAT
-run_order_tests_cat(y_cat, max_order = 2)$table
+run_order_tests_cat(y_cat, max_order = 2)
 ```
 
 ### Missing-data CAT fit
@@ -181,14 +182,14 @@ y_cat_miss <- y_cat
 y_cat_miss[sample(length(y_cat_miss), 12)] <- NA
 
 fit_cat_miss <- fit_cat(y_cat_miss, order = 1, na_action = "marginalize")
-fit_cat_miss$log_l
+logLik(fit_cat_miss)
 fit_cat_miss$settings$na_action_effective
 ```
 
 ```{r}
 # EM alternative for CAT missing data (orders 0/1)
 fit_cat_miss_em <- fit_cat(y_cat_miss, order = 1, na_action = "em", em_max_iter = 10)
-fit_cat_miss_em$log_l
+logLik(fit_cat_miss_em)
 ```
 
 ```{r}

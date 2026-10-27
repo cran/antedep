@@ -47,7 +47,7 @@ order is the highest order where the test was significant (at alpha = 0.05).
 \donttest{
 y <- simulate_cat(200, 6, order = 1, n_categories = 2)
 result <- run_order_tests_cat(y, max_order = 2)
-print(result$table)
+print(result)
 cat("Selected order:", result$selected_order, "\n")
 }
 

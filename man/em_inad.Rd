@@ -10,13 +10,15 @@ em_inad(
   thinning = "binom",
   innovation = "pois",
   blocks = NULL,
-  max_iter = 200,
-  tol = 1e-07,
+  max_iter = 2000,
+  tol = 1e-09,
   alpha_init = NULL,
   theta_init = NULL,
   tau_init = NULL,
   nb_inno_size = NULL,
+  nb_inno_size_ub = 50,
   safeguard = TRUE,
+  newton_polish = FALSE,
   verbose = FALSE
 )
 }
@@ -29,11 +31,12 @@ em_inad(
 
 \item{innovation}{Innovation distribution: "pois", "bell", or "nbinom".}
 
-\item{blocks}{Optional integer vector of length n_subjects for block effects.}
+\item{blocks}{Optional vector of length n_subjects for block effects.}
 
 \item{max_iter}{Maximum number of EM iterations.}
 
-\item{tol}{Convergence tolerance for log-likelihood change.}
+\item{tol}{Convergence tolerance for the absolute change in the
+observed-data log-likelihood between iterations.}
 
 \item{alpha_init}{Optional initial values for alpha parameters.}
 
@@ -41,24 +44,62 @@ em_inad(
 
 \item{tau_init}{Optional initial values for tau parameters.}
 
-\item{nb_inno_size}{Size parameter for negative binomial innovation (if used).}
+\item{nb_inno_size}{Optional starting value(s), scalar or length n_time,
+for the negative binomial innovation size parameters, which are estimated.
+Default 1.}
 
-\item{safeguard}{Logical; if TRUE, use step-halving when likelihood decreases.}
+\item{nb_inno_size_ub}{Upper bound for the negative binomial innovation size
+parameters. Default 50, as in \code{\link{fit_inad}}.}
+
+\item{safeguard}{Logical; if TRUE, warn when the log-likelihood decreases by
+more than numerical tolerance.}
+
+\item{newton_polish}{Logical; if TRUE, finish with Newton-Raphson steps that
+use the exact score and observed information from Louis' identity (see
+\code{\link{ci_inad}}). EM converges linearly, so this removes the small
+remaining distance to the maximum. Default FALSE (pure EM).}
 
 \item{verbose}{Logical; if TRUE, print iteration progress.}
 }
 \value{
-A list with class "inad_fit" containing estimated parameters.
+A list with class "inad_fit" containing estimated parameters,
+the maximized log-likelihood, \code{n_params}, \code{aic}, \code{bic},
+the number of iterations, and the log-likelihood trace.
 }
 \description{
-Fits INAD models using the Expectation-Maximization algorithm.
-This is an alternative to direct likelihood optimization.
+Fits INAD models using the Expectation-Maximization algorithm, treating the
+thinned counts as missing data. This is an alternative to direct likelihood
+optimization by \code{\link{fit_inad}}.
 }
 \details{
 For Gaussian and CAT EM entry points, see \code{\link{em_gau}} and
 \code{\link{em_cat}}. For CAT specifically, \code{fit_cat()} supports
 \code{na_action = "em"} for orders 0/1 and \code{na_action = "marginalize"}
 for order 2 missing-data fits.
+
+The complete data for subject \eqn{s} at time \eqn{i} are the thinned
+counts \eqn{Z_{si,j} = \alpha_{i,i-j} \odot Y_{s,i-j}} and the innovation
+\eqn{w_{si} = y_{si} - \sum_j Z_{si,j}}. Given the observed data, the
+latent vector at time \eqn{i} has finite support and a conditional
+distribution that depends only on \eqn{y_{si}} and its \eqn{p}
+predecessors. The E-step computes this conditional distribution exactly, so
+the expected complete-data log-likelihood is evaluated without
+approximation for every thinning-innovation combination.
+
+For binomial, Poisson, and negative binomial thinning, the
+parameter-dependent part of the thinning log-likelihood is linear in the
+thinned count, and the M-step for the thinning coefficient has the closed
+form \eqn{\hat\alpha_{i,i-j} = \sum_s E(Z_{si,j} \mid y_s) / \sum_s
+y_{s,i-j}}. For Poisson and Bell innovations the innovation log-likelihood is
+also linear in \eqn{w_{si}}. For negative binomial innovations it contains
+\eqn{\log\Gamma(w_{si} + \kappa_i)}, which is not linear in \eqn{w_{si}};
+its conditional expectation is computed from the conditional distribution of
+\eqn{w_{si}}, and the size parameters \eqn{\kappa_i} are updated by
+maximizing the resulting expected log-likelihood. Without block effects the
+innovation updates are exact maximizations. With block effects the
+innovation means, sizes, and block effects are updated by conditional
+maximization (an ECM algorithm), which also never decreases the
+observed-data log-likelihood.
 }
 \examples{
 set.seed(1)
@@ -73,6 +114,14 @@ y <- simulate_inad(
 )
 fit <- em_inad(y, order = 1, thinning = "binom", innovation = "pois", max_iter = 20, tol = 1e-6)
 fit$log_l
+}
+\references{
+Dempster, A.P., Laird, N.M. and Rubin, D.B. (1977). Maximum likelihood from
+incomplete data via the EM algorithm. \emph{Journal of the Royal Statistical
+Society, Series B}, 39, 1-38.
+
+Meng, X.-L. and Rubin, D.B. (1993). Maximum likelihood estimation via the
+ECM algorithm: a general framework. \emph{Biometrika}, 80, 267-278.
 }
 \seealso{
 \code{\link{em_gau}}, \code{\link{em_cat}}, \code{\link{fit_inad}},

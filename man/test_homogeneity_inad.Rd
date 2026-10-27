@@ -92,32 +92,30 @@ the null and alternative models.
 \examples{
 \donttest{
 data("bolus_inad")
-y <- bolus_inad$y
+y <- bolus_inad$y[, 1:4]  # first four occasions, to keep the example short
 blocks <- bolus_inad$blocks
 
 # Test for any group differences (M1 vs M3)
-test_all <- test_homogeneity_inad(y, blocks, order = 1,
-                                  thinning = "nbinom", innovation = "bell",
-                                  test = "all")
+test_all <- test_homogeneity_inad(y, blocks, order = 1, test = "all")
 print(test_all)
 
-# Test only for mean differences (M1 vs M2)
-test_mean <- test_homogeneity_inad(y, blocks, order = 1,
-                                   thinning = "nbinom", innovation = "bell",
-                                   test = "mean")
+# Test only for mean differences (M1 vs M2), reusing the pooled fit
+test_mean <- test_homogeneity_inad(y, blocks, order = 1, test = "mean",
+                                   fit_pooled = test_all$fit_null)
 print(test_mean)
 
-# Test for dependence differences given different means (M2 vs M3)
-test_dep <- test_homogeneity_inad(y, blocks, order = 1,
-                                  thinning = "nbinom", innovation = "bell",
-                                  test = "dependence")
+# Test for dependence differences given different means (M2 vs M3),
+# reusing the INADFE and heterogeneous fits
+test_dep <- test_homogeneity_inad(y, blocks, order = 1, test = "dependence",
+                                  fit_inadfe = test_mean$fit_alt,
+                                  fit_hetero = test_all$fit_alt)
 print(test_dep)
 }
 
 }
 \references{
 Li, C. and Zimmerman, D.L. (2026). Integer-valued antedependence models for
-longitudinal count data. \emph{Biostatistics}. Section 3.7.
+longitudinal count data. Manuscript under review.
 }
 \seealso{
 \code{\link{fit_inad}}, \code{\link{test_order_inad}},

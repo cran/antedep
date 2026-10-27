@@ -5,39 +5,26 @@
 \alias{coef.gau_fit}
 \alias{coef.cat_fit}
 \alias{coef.inad_fit}
-\title{Extract model coefficients from antedependence fits}
+\title{Extract Model Coefficients from Antedependence Fits}
 \usage{
-\method{coef}{gau_fit}(object, ...)
+\method{coef}{gau_fit}(object, type = c("vector", "list"), ...)
 
-\method{coef}{cat_fit}(object, ...)
+\method{coef}{cat_fit}(object, type = c("vector", "list"), ...)
 
-\method{coef}{inad_fit}(object, ...)
+\method{coef}{inad_fit}(object, type = c("vector", "list"), ...)
 }
 \arguments{
-\item{object}{A fitted model object of class \code{gau_fit},
-\code{cat_fit}, or \code{inad_fit}.}
+\item{object}{A fitted model object.}
+
+\item{type}{Return type: \code{"vector"} (default) or \code{"list"}.}
 
 \item{...}{Unused.}
 }
 \value{
-For \code{gau_fit}: a named list with elements \code{mu},
-\code{phi}, \code{sigma}, and (if a block effect was estimated)
-\code{tau}.
-For \code{cat_fit}: a list with \code{marginal} and \code{transition}
-probability arrays.
-For \code{inad_fit}: a named list with elements \code{alpha},
-\code{theta}, and (if applicable) \code{tau} and \code{nb_inno_size}.
+A named numeric vector or a family-specific named list.
 }
 \description{
-Returns the estimated parameters of a fitted antedependence model as a
-named list.
-}
-\examples{
-\donttest{
-set.seed(1)
-y <- simulate_gau(n_subjects = 40, n_time = 5, order = 1, phi = 0.4)
-fit <- fit_gau(y, order = 1)
-coef(fit)
-}
-
+By default, returns a named numeric vector so standard tools can consume
+fitted objects. Use \code{type = "list"} to inspect the family-specific
+structured representation.
 }

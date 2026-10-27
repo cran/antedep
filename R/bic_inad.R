@@ -53,5 +53,8 @@ aic_inad <- function(fit) {
         if (length(fit$nb_inno_size) == 1L) k <- k + 1 else k <- k + N
     }
 
+    # Time-invariance constraints (fit_inad(constrain = ...)) remove free parameters.
+    if (!is.null(fit$settings$constraint_df)) k <- k - fit$settings$constraint_df
+
     k
 }

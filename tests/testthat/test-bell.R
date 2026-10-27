@@ -1,6 +1,6 @@
 test_that("dbell probabilities approximately sum to one", {
     theta <- 1
-    z_vals <- 0:.BELL_MAX_Z
+    z_vals <- 0:getFromNamespace(".BELL_MAX_Z", "antedep")
     p <- dbell(z_vals, theta)
     s <- sum(p)
     expect_true(s > 0.99)

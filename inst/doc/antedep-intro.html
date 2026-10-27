@@ -422,14 +422,22 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>fit_gau1 <span class="ot">&lt;-</span> <span class="fu">fit_gau</span>(y_gau, <span class="at">order =</span> <span class="dv">1</span>)</span>
 <span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>fit_gau2 <span class="ot">&lt;-</span> <span class="fu">fit_gau</span>(y_gau, <span class="at">order =</span> <span class="dv">2</span>)</span>
 <span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a></span>
-<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a><span class="fu">c</span>(<span class="at">order1_logLik =</span> fit_gau1<span class="sc">$</span>log_l, <span class="at">order2_logLik =</span> fit_gau2<span class="sc">$</span>log_l)</span>
-<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a><span class="co">#&gt; order1_logLik order2_logLik </span></span>
-<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a><span class="co">#&gt;     -105.6720     -104.4205</span></span>
-<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a><span class="fu">bic_order_gau</span>(y_gau, <span class="at">max_order =</span> <span class="dv">2</span>)<span class="sc">$</span>table</span>
-<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a><span class="co">#&gt;        order     log_l      bic selected</span></span>
-<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a><span class="co">#&gt; order0     0 -112.6549 249.2756    FALSE</span></span>
-<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a><span class="co">#&gt; order1     1 -105.6720 244.2971     TRUE</span></span>
-<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a><span class="co">#&gt; order2     2 -104.4205 247.7855    FALSE</span></span></code></pre></div>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a><span class="fu">logLik</span>(fit_gau1)</span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a><span class="co">#&gt; &#39;log Lik.&#39; -105.672 (df=7)</span></span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a><span class="fu">BIC</span>(fit_gau1, fit_gau2)</span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a><span class="co">#&gt;          df      BIC</span></span>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a><span class="co">#&gt; fit_gau1  7 232.3141</span></span>
+<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a><span class="co">#&gt; fit_gau2  9 235.8026</span></span>
+<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a><span class="fu">bic_order_gau</span>(y_gau, <span class="at">max_order =</span> <span class="dv">2</span>)</span>
+<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a><span class="co">#&gt; BIC-based Order Selection for Gaussian AD</span></span>
+<span id="cb4-13"><a href="#cb4-13" tabindex="-1"></a><span class="co">#&gt; ==========================================</span></span>
+<span id="cb4-14"><a href="#cb4-14" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb4-15"><a href="#cb4-15" tabindex="-1"></a><span class="co">#&gt;  order     log_l      bic selected</span></span>
+<span id="cb4-16"><a href="#cb4-16" tabindex="-1"></a><span class="co">#&gt;      0 -112.6549 249.2756    FALSE</span></span>
+<span id="cb4-17"><a href="#cb4-17" tabindex="-1"></a><span class="co">#&gt;      1 -105.6720 244.2971     TRUE</span></span>
+<span id="cb4-18"><a href="#cb4-18" tabindex="-1"></a><span class="co">#&gt;      2 -104.4205 247.7855    FALSE</span></span>
+<span id="cb4-19"><a href="#cb4-19" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb4-20"><a href="#cb4-20" tabindex="-1"></a><span class="co">#&gt; Best order by BIC: 1</span></span></code></pre></div>
 <div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="co"># Example AD order test</span></span>
 <span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="fu">test_order_gau</span>(y_gau, <span class="at">p =</span> <span class="dv">0</span>, <span class="at">q =</span> <span class="dv">1</span>)<span class="sc">$</span>p_value</span>
 <span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a><span class="co">#&gt; [1] 0.002952214</span></span></code></pre></div>
@@ -447,8 +455,29 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a><span class="fu">c</span>(<span class="at">em_logLik =</span> fit_gau_em<span class="sc">$</span>log_l, <span class="at">complete_case_logLik =</span> fit_gau_cc<span class="sc">$</span>log_l)</span>
 <span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a><span class="co">#&gt;            em_logLik complete_case_logLik </span></span>
 <span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a><span class="co">#&gt;            -94.00107            -63.11882</span></span>
-<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a>fit_gau_em<span class="sc">$</span>pct_missing</span>
-<span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a><span class="co">#&gt; [1] 10</span></span></code></pre></div>
+<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a><span class="fu">summary</span>(fit_gau_em)</span>
+<span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a><span class="co">#&gt; Gaussian Antedependence Model -- Summary</span></span>
+<span id="cb6-14"><a href="#cb6-14" tabindex="-1"></a><span class="co">#&gt; ========================================</span></span>
+<span id="cb6-15"><a href="#cb6-15" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb6-16"><a href="#cb6-16" tabindex="-1"></a><span class="co">#&gt;   Order            : 1</span></span>
+<span id="cb6-17"><a href="#cb6-17" tabindex="-1"></a><span class="co">#&gt;   Subjects (n)     : 20</span></span>
+<span id="cb6-18"><a href="#cb6-18" tabindex="-1"></a><span class="co">#&gt;   Time points (T)  : 4</span></span>
+<span id="cb6-19"><a href="#cb6-19" tabindex="-1"></a><span class="co">#&gt;   Parameters       : 7</span></span>
+<span id="cb6-20"><a href="#cb6-20" tabindex="-1"></a><span class="co">#&gt;   Missing values   : 8 (10.0%)</span></span>
+<span id="cb6-21"><a href="#cb6-21" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb6-22"><a href="#cb6-22" tabindex="-1"></a><span class="co">#&gt; Fit statistics:</span></span>
+<span id="cb6-23"><a href="#cb6-23" tabindex="-1"></a><span class="co">#&gt;   Log-likelihood   : -94.0011</span></span>
+<span id="cb6-24"><a href="#cb6-24" tabindex="-1"></a><span class="co">#&gt;   AIC              : 202.0021</span></span>
+<span id="cb6-25"><a href="#cb6-25" tabindex="-1"></a><span class="co">#&gt;   BIC              : 208.9723</span></span>
+<span id="cb6-26"><a href="#cb6-26" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb6-27"><a href="#cb6-27" tabindex="-1"></a><span class="co">#&gt; Estimated mean (mu):</span></span>
+<span id="cb6-28"><a href="#cb6-28" tabindex="-1"></a><span class="co">#&gt; [1]  0.0961  0.1565  0.1244 -0.1773</span></span>
+<span id="cb6-29"><a href="#cb6-29" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb6-30"><a href="#cb6-30" tabindex="-1"></a><span class="co">#&gt; Antedependence parameters (phi):</span></span>
+<span id="cb6-31"><a href="#cb6-31" tabindex="-1"></a><span class="co">#&gt; [1] 0.6772 0.1696 0.4342</span></span>
+<span id="cb6-32"><a href="#cb6-32" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb6-33"><a href="#cb6-33" tabindex="-1"></a><span class="co">#&gt; Innovation std dev (sigma):</span></span>
+<span id="cb6-34"><a href="#cb6-34" tabindex="-1"></a><span class="co">#&gt; [1] 0.9905 0.6902 1.0489 0.8335</span></span></code></pre></div>
 </div>
 <div id="ad-mean-and-covariance-structure-tests-complete-data" class="section level3">
 <h3>AD mean and covariance structure tests (complete data)</h3>
@@ -486,13 +515,19 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <span id="cb10-9"><a href="#cb10-9" tabindex="-1"></a>)</span>
 <span id="cb10-10"><a href="#cb10-10" tabindex="-1"></a></span>
 <span id="cb10-11"><a href="#cb10-11" tabindex="-1"></a>fit_inad1 <span class="ot">&lt;-</span> <span class="fu">fit_inad</span>(y_inad, <span class="at">order =</span> <span class="dv">1</span>, <span class="at">thinning =</span> <span class="st">&quot;binom&quot;</span>, <span class="at">innovation =</span> <span class="st">&quot;pois&quot;</span>)</span>
-<span id="cb10-12"><a href="#cb10-12" tabindex="-1"></a>fit_inad1<span class="sc">$</span>log_l</span>
-<span id="cb10-13"><a href="#cb10-13" tabindex="-1"></a><span class="co">#&gt; [1] -158.3541</span></span>
-<span id="cb10-14"><a href="#cb10-14" tabindex="-1"></a><span class="fu">bic_order_inad</span>(y_inad, <span class="at">max_order =</span> <span class="dv">2</span>, <span class="at">thinning =</span> <span class="st">&quot;binom&quot;</span>, <span class="at">innovation =</span> <span class="st">&quot;pois&quot;</span>)<span class="sc">$</span>table</span>
-<span id="cb10-15"><a href="#cb10-15" tabindex="-1"></a><span class="co">#&gt;         order    logLik n_params      BIC</span></span>
-<span id="cb10-16"><a href="#cb10-16" tabindex="-1"></a><span class="co">#&gt; order_0     0 -164.6683        4 341.3196</span></span>
-<span id="cb10-17"><a href="#cb10-17" tabindex="-1"></a><span class="co">#&gt; order_1     1 -158.3541        7 337.6784</span></span>
-<span id="cb10-18"><a href="#cb10-18" tabindex="-1"></a><span class="co">#&gt; order_2     2 -158.3541        8 340.6741</span></span></code></pre></div>
+<span id="cb10-12"><a href="#cb10-12" tabindex="-1"></a><span class="fu">logLik</span>(fit_inad1)</span>
+<span id="cb10-13"><a href="#cb10-13" tabindex="-1"></a><span class="co">#&gt; &#39;log Lik.&#39; -158.3541 (df=7)</span></span>
+<span id="cb10-14"><a href="#cb10-14" tabindex="-1"></a><span class="fu">bic_order_inad</span>(y_inad, <span class="at">max_order =</span> <span class="dv">2</span>, <span class="at">thinning =</span> <span class="st">&quot;binom&quot;</span>, <span class="at">innovation =</span> <span class="st">&quot;pois&quot;</span>)</span>
+<span id="cb10-15"><a href="#cb10-15" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-16"><a href="#cb10-16" tabindex="-1"></a><span class="co">#&gt; BIC Model Order Comparison for INAD</span></span>
+<span id="cb10-17"><a href="#cb10-17" tabindex="-1"></a><span class="co">#&gt; ====================================</span></span>
+<span id="cb10-18"><a href="#cb10-18" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-19"><a href="#cb10-19" tabindex="-1"></a><span class="co">#&gt;  order logLik n_params   BIC</span></span>
+<span id="cb10-20"><a href="#cb10-20" tabindex="-1"></a><span class="co">#&gt;      0 -164.7        4 341.3</span></span>
+<span id="cb10-21"><a href="#cb10-21" tabindex="-1"></a><span class="co">#&gt;      1 -158.4        7 337.7</span></span>
+<span id="cb10-22"><a href="#cb10-22" tabindex="-1"></a><span class="co">#&gt;      2 -158.4        9 343.7</span></span>
+<span id="cb10-23"><a href="#cb10-23" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-24"><a href="#cb10-24" tabindex="-1"></a><span class="co">#&gt; Best order by BIC: 1</span></span></code></pre></div>
 </div>
 <div id="missing-data-inad-fit" class="section level3">
 <h3>Missing-data INAD fit</h3>
@@ -508,16 +543,37 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <span id="cb11-10"><a href="#cb11-10" tabindex="-1"></a>  <span class="at">max_iter =</span> <span class="dv">10</span></span>
 <span id="cb11-11"><a href="#cb11-11" tabindex="-1"></a>)</span>
 <span id="cb11-12"><a href="#cb11-12" tabindex="-1"></a></span>
-<span id="cb11-13"><a href="#cb11-13" tabindex="-1"></a>fit_inad_miss<span class="sc">$</span>log_l</span>
-<span id="cb11-14"><a href="#cb11-14" tabindex="-1"></a><span class="co">#&gt; [1] -142.2786</span></span>
-<span id="cb11-15"><a href="#cb11-15" tabindex="-1"></a>fit_inad_miss<span class="sc">$</span>pct_missing</span>
-<span id="cb11-16"><a href="#cb11-16" tabindex="-1"></a><span class="co">#&gt; [1] 12.5</span></span></code></pre></div>
+<span id="cb11-13"><a href="#cb11-13" tabindex="-1"></a><span class="fu">summary</span>(fit_inad_miss)</span>
+<span id="cb11-14"><a href="#cb11-14" tabindex="-1"></a><span class="co">#&gt; INAD Antedependence Model -- Summary</span></span>
+<span id="cb11-15"><a href="#cb11-15" tabindex="-1"></a><span class="co">#&gt; ====================================</span></span>
+<span id="cb11-16"><a href="#cb11-16" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb11-17"><a href="#cb11-17" tabindex="-1"></a><span class="co">#&gt;   Order            : 1</span></span>
+<span id="cb11-18"><a href="#cb11-18" tabindex="-1"></a><span class="co">#&gt;   Thinning         : binom</span></span>
+<span id="cb11-19"><a href="#cb11-19" tabindex="-1"></a><span class="co">#&gt;   Innovation       : pois</span></span>
+<span id="cb11-20"><a href="#cb11-20" tabindex="-1"></a><span class="co">#&gt;   Subjects (n)     : 20</span></span>
+<span id="cb11-21"><a href="#cb11-21" tabindex="-1"></a><span class="co">#&gt;   Time points (T)  : 4</span></span>
+<span id="cb11-22"><a href="#cb11-22" tabindex="-1"></a><span class="co">#&gt;   Parameters       : 7</span></span>
+<span id="cb11-23"><a href="#cb11-23" tabindex="-1"></a><span class="co">#&gt;   Missing values   : 10 (12.5%)</span></span>
+<span id="cb11-24"><a href="#cb11-24" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb11-25"><a href="#cb11-25" tabindex="-1"></a><span class="co">#&gt; Fit statistics:</span></span>
+<span id="cb11-26"><a href="#cb11-26" tabindex="-1"></a><span class="co">#&gt;   Log-likelihood   : -142.2786</span></span>
+<span id="cb11-27"><a href="#cb11-27" tabindex="-1"></a><span class="co">#&gt;   AIC              : 298.5573</span></span>
+<span id="cb11-28"><a href="#cb11-28" tabindex="-1"></a><span class="co">#&gt;   BIC              : 305.5274</span></span>
+<span id="cb11-29"><a href="#cb11-29" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb11-30"><a href="#cb11-30" tabindex="-1"></a><span class="co">#&gt; Estimated innovation mean (theta):</span></span>
+<span id="cb11-31"><a href="#cb11-31" tabindex="-1"></a><span class="co">#&gt; [1] 3.3775 2.0946 2.4217 3.2136</span></span>
+<span id="cb11-32"><a href="#cb11-32" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb11-33"><a href="#cb11-33" tabindex="-1"></a><span class="co">#&gt; Estimated thinning parameter (alpha):</span></span>
+<span id="cb11-34"><a href="#cb11-34" tabindex="-1"></a><span class="co">#&gt; [1] 0.0000 0.7107 0.5782 0.1964</span></span></code></pre></div>
 <div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a><span class="co"># Missing-data LRTs (observed-data likelihood)</span></span>
 <span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a>blocks_inad <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>, <span class="at">each =</span> <span class="fu">nrow</span>(y_inad_miss) <span class="sc">/</span> <span class="dv">2</span>)</span>
-<span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a><span class="fu">test_order_inad</span>(y_inad_miss, <span class="at">order_null =</span> <span class="dv">0</span>, <span class="at">order_alt =</span> <span class="dv">1</span>, <span class="at">blocks =</span> blocks_inad)<span class="sc">$</span>p_value</span>
-<span id="cb12-4"><a href="#cb12-4" tabindex="-1"></a><span class="co">#&gt; [1] 0.08052965</span></span>
-<span id="cb12-5"><a href="#cb12-5" tabindex="-1"></a><span class="fu">test_homogeneity_inad</span>(y_inad_miss, <span class="at">blocks =</span> blocks_inad, <span class="at">order =</span> <span class="dv">1</span>, <span class="at">test =</span> <span class="st">&quot;mean&quot;</span>)<span class="sc">$</span>p_value</span>
-<span id="cb12-6"><a href="#cb12-6" tabindex="-1"></a><span class="co">#&gt; [1] 0.7852657</span></span></code></pre></div>
+<span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a><span class="co"># Order comparisons are boundary problems: compare BIC (no calibrated p-value)</span></span>
+<span id="cb12-4"><a href="#cb12-4" tabindex="-1"></a>ord_inad <span class="ot">&lt;-</span> <span class="fu">test_order_inad</span>(y_inad_miss, <span class="at">order_null =</span> <span class="dv">0</span>, <span class="at">order_alt =</span> <span class="dv">1</span>, <span class="at">blocks =</span> blocks_inad)</span>
+<span id="cb12-5"><a href="#cb12-5" tabindex="-1"></a><span class="fu">c</span>(<span class="at">LR =</span> ord_inad<span class="sc">$</span>lrt_stat, <span class="at">BIC_order0 =</span> ord_inad<span class="sc">$</span>bic_null, <span class="at">BIC_order1 =</span> ord_inad<span class="sc">$</span>bic_alt)</span>
+<span id="cb12-6"><a href="#cb12-6" tabindex="-1"></a><span class="co">#&gt;         LR BIC_order0 BIC_order1 </span></span>
+<span id="cb12-7"><a href="#cb12-7" tabindex="-1"></a><span class="co">#&gt;   6.743751 306.205451 308.448896</span></span>
+<span id="cb12-8"><a href="#cb12-8" tabindex="-1"></a><span class="fu">test_homogeneity_inad</span>(y_inad_miss, <span class="at">blocks =</span> blocks_inad, <span class="at">order =</span> <span class="dv">1</span>, <span class="at">test =</span> <span class="st">&quot;mean&quot;</span>)<span class="sc">$</span>p_value</span>
+<span id="cb12-9"><a href="#cb12-9" tabindex="-1"></a><span class="co">#&gt; [1] 0.7852656</span></span></code></pre></div>
 </div>
 </div>
 <div id="cat-workflow-categorical-outcomes" class="section level2">
@@ -526,27 +582,31 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <h3>Complete-data CAT fit and inference</h3>
 <div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a>y_cat <span class="ot">&lt;-</span> <span class="fu">simulate_cat</span>(<span class="at">n_subjects =</span> <span class="dv">20</span>, <span class="at">n_time =</span> <span class="dv">4</span>, <span class="at">order =</span> <span class="dv">1</span>, <span class="at">n_categories =</span> <span class="dv">3</span>)</span>
 <span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a>fit_cat1 <span class="ot">&lt;-</span> <span class="fu">fit_cat</span>(y_cat, <span class="at">order =</span> <span class="dv">1</span>)</span>
-<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a>fit_cat1<span class="sc">$</span>log_l</span>
-<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a><span class="co">#&gt; [1] -79.08119</span></span>
+<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a><span class="fu">logLik</span>(fit_cat1)</span>
+<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a><span class="co">#&gt; &#39;log Lik.&#39; -79.08119 (df=20)</span></span>
 <span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a></span>
 <span id="cb13-6"><a href="#cb13-6" tabindex="-1"></a><span class="co"># Wald CIs (complete data)</span></span>
-<span id="cb13-7"><a href="#cb13-7" tabindex="-1"></a>ci_cat1 <span class="ot">&lt;-</span> <span class="fu">ci_cat</span>(fit_cat1, <span class="at">parameters =</span> <span class="st">&quot;marginal&quot;</span>)</span>
-<span id="cb13-8"><a href="#cb13-8" tabindex="-1"></a><span class="fu">head</span>(ci_cat1<span class="sc">$</span>marginal, <span class="dv">3</span>)</span>
-<span id="cb13-9"><a href="#cb13-9" tabindex="-1"></a><span class="co">#&gt;        parameter time category estimate         se     lower     upper level</span></span>
-<span id="cb13-10"><a href="#cb13-10" tabindex="-1"></a><span class="co">#&gt; cat_1 pi_t1_cat1    1        1     0.25 0.09682458 0.0602273 0.4397727  0.95</span></span>
-<span id="cb13-11"><a href="#cb13-11" tabindex="-1"></a><span class="co">#&gt; cat_2 pi_t1_cat2    1        2     0.40 0.10954451 0.1852967 0.6147033  0.95</span></span>
-<span id="cb13-12"><a href="#cb13-12" tabindex="-1"></a><span class="co">#&gt; cat_3 pi_t1_cat3    1        3     0.35 0.10665365 0.1409627 0.5590373  0.95</span></span></code></pre></div>
+<span id="cb13-7"><a href="#cb13-7" tabindex="-1"></a><span class="fu">head</span>(<span class="fu">confint</span>(fit_cat1), <span class="dv">3</span>)</span>
+<span id="cb13-8"><a href="#cb13-8" tabindex="-1"></a><span class="co">#&gt;                lower     upper</span></span>
+<span id="cb13-9"><a href="#cb13-9" tabindex="-1"></a><span class="co">#&gt; pi_t1_cat1 0.0602273 0.4397727</span></span>
+<span id="cb13-10"><a href="#cb13-10" tabindex="-1"></a><span class="co">#&gt; pi_t1_cat2 0.1852967 0.6147033</span></span>
+<span id="cb13-11"><a href="#cb13-11" tabindex="-1"></a><span class="co">#&gt; pi_t1_cat3 0.1409627 0.5590373</span></span></code></pre></div>
 <div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a><span class="co"># Order tests for CAT</span></span>
-<span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a><span class="fu">run_order_tests_cat</span>(y_cat, <span class="at">max_order =</span> <span class="dv">2</span>)<span class="sc">$</span>table</span>
-<span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a><span class="co">#&gt;       comparison order_null order_alt</span></span>
-<span id="cb14-4"><a href="#cb14-4" tabindex="-1"></a><span class="co">#&gt; 1 AD(0) vs AD(1)          0         1</span></span>
-<span id="cb14-5"><a href="#cb14-5" tabindex="-1"></a><span class="co">#&gt; 2 AD(1) vs AD(2)          1         2</span></span>
-<span id="cb14-6"><a href="#cb14-6" tabindex="-1"></a><span class="co">#&gt;                                                                    method</span></span>
-<span id="cb14-7"><a href="#cb14-7" tabindex="-1"></a><span class="co">#&gt; 1 Likelihood Ratio Test for Categorical AD Order (H0: AD(0) vs H1: AD(1))</span></span>
-<span id="cb14-8"><a href="#cb14-8" tabindex="-1"></a><span class="co">#&gt; 2 Likelihood Ratio Test for Categorical AD Order (H0: AD(1) vs H1: AD(2))</span></span>
-<span id="cb14-9"><a href="#cb14-9" tabindex="-1"></a><span class="co">#&gt;   lrt_stat df    p_value significant</span></span>
-<span id="cb14-10"><a href="#cb14-10" tabindex="-1"></a><span class="co">#&gt; 1 13.04437 12 0.36582405       FALSE</span></span>
-<span id="cb14-11"><a href="#cb14-11" tabindex="-1"></a><span class="co">#&gt; 2 37.28660 24 0.04096144        TRUE</span></span></code></pre></div>
+<span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a><span class="fu">run_order_tests_cat</span>(y_cat, <span class="at">max_order =</span> <span class="dv">2</span>)</span>
+<span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a><span class="co">#&gt; Sequential Order Tests for Categorical AD</span></span>
+<span id="cb14-4"><a href="#cb14-4" tabindex="-1"></a><span class="co">#&gt; =========================================</span></span>
+<span id="cb14-5"><a href="#cb14-5" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb14-6"><a href="#cb14-6" tabindex="-1"></a><span class="co">#&gt;      comparison order_null order_alt</span></span>
+<span id="cb14-7"><a href="#cb14-7" tabindex="-1"></a><span class="co">#&gt;  AD(0) vs AD(1)          0         1</span></span>
+<span id="cb14-8"><a href="#cb14-8" tabindex="-1"></a><span class="co">#&gt;  AD(1) vs AD(2)          1         2</span></span>
+<span id="cb14-9"><a href="#cb14-9" tabindex="-1"></a><span class="co">#&gt;                                                                   method</span></span>
+<span id="cb14-10"><a href="#cb14-10" tabindex="-1"></a><span class="co">#&gt;  Likelihood Ratio Test for Categorical AD Order (H0: AD(0) vs H1: AD(1))</span></span>
+<span id="cb14-11"><a href="#cb14-11" tabindex="-1"></a><span class="co">#&gt;  Likelihood Ratio Test for Categorical AD Order (H0: AD(1) vs H1: AD(2))</span></span>
+<span id="cb14-12"><a href="#cb14-12" tabindex="-1"></a><span class="co">#&gt;  lrt_stat df p_value significant</span></span>
+<span id="cb14-13"><a href="#cb14-13" tabindex="-1"></a><span class="co">#&gt;   13.0444 12  0.3658       FALSE</span></span>
+<span id="cb14-14"><a href="#cb14-14" tabindex="-1"></a><span class="co">#&gt;   37.2866 24  0.0410        TRUE</span></span>
+<span id="cb14-15"><a href="#cb14-15" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb14-16"><a href="#cb14-16" tabindex="-1"></a><span class="co">#&gt; Selected order: 0</span></span></code></pre></div>
 </div>
 <div id="missing-data-cat-fit" class="section level3">
 <h3>Missing-data CAT fit</h3>
@@ -554,16 +614,16 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a>y_cat_miss[<span class="fu">sample</span>(<span class="fu">length</span>(y_cat_miss), <span class="dv">12</span>)] <span class="ot">&lt;-</span> <span class="cn">NA</span></span>
 <span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a></span>
 <span id="cb15-4"><a href="#cb15-4" tabindex="-1"></a>fit_cat_miss <span class="ot">&lt;-</span> <span class="fu">fit_cat</span>(y_cat_miss, <span class="at">order =</span> <span class="dv">1</span>, <span class="at">na_action =</span> <span class="st">&quot;marginalize&quot;</span>)</span>
-<span id="cb15-5"><a href="#cb15-5" tabindex="-1"></a>fit_cat_miss<span class="sc">$</span>log_l</span>
-<span id="cb15-6"><a href="#cb15-6" tabindex="-1"></a><span class="co">#&gt; [1] -65.91133</span></span>
+<span id="cb15-5"><a href="#cb15-5" tabindex="-1"></a><span class="fu">logLik</span>(fit_cat_miss)</span>
+<span id="cb15-6"><a href="#cb15-6" tabindex="-1"></a><span class="co">#&gt; &#39;log Lik.&#39; -65.91133 (df=20)</span></span>
 <span id="cb15-7"><a href="#cb15-7" tabindex="-1"></a>fit_cat_miss<span class="sc">$</span>settings<span class="sc">$</span>na_action_effective</span>
 <span id="cb15-8"><a href="#cb15-8" tabindex="-1"></a><span class="co">#&gt; [1] &quot;marginalize&quot;</span></span></code></pre></div>
 <div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a><span class="co"># EM alternative for CAT missing data (orders 0/1)</span></span>
 <span id="cb16-2"><a href="#cb16-2" tabindex="-1"></a>fit_cat_miss_em <span class="ot">&lt;-</span> <span class="fu">fit_cat</span>(y_cat_miss, <span class="at">order =</span> <span class="dv">1</span>, <span class="at">na_action =</span> <span class="st">&quot;em&quot;</span>, <span class="at">em_max_iter =</span> <span class="dv">10</span>)</span>
 <span id="cb16-3"><a href="#cb16-3" tabindex="-1"></a><span class="co">#&gt; Warning in em_cat(y = y, order = p, blocks = blocks_input, homogeneous =</span></span>
 <span id="cb16-4"><a href="#cb16-4" tabindex="-1"></a><span class="co">#&gt; homogeneous, : EM did not converge after 10 iterations (change = 0.000809).</span></span>
-<span id="cb16-5"><a href="#cb16-5" tabindex="-1"></a>fit_cat_miss_em<span class="sc">$</span>log_l</span>
-<span id="cb16-6"><a href="#cb16-6" tabindex="-1"></a><span class="co">#&gt; [1] -65.91256</span></span></code></pre></div>
+<span id="cb16-5"><a href="#cb16-5" tabindex="-1"></a><span class="fu">logLik</span>(fit_cat_miss_em)</span>
+<span id="cb16-6"><a href="#cb16-6" tabindex="-1"></a><span class="co">#&gt; &#39;log Lik.&#39; -65.91256 (df=20)</span></span></code></pre></div>
 <div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" tabindex="-1"></a><span class="co"># Missing-data order/homogeneity tests are supported</span></span>
 <span id="cb17-2"><a href="#cb17-2" tabindex="-1"></a>blocks_cat <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>, <span class="at">each =</span> <span class="fu">nrow</span>(y_cat_miss) <span class="sc">/</span> <span class="dv">2</span>)</span>
 <span id="cb17-3"><a href="#cb17-3" tabindex="-1"></a><span class="fu">test_order_cat</span>(y_cat_miss, <span class="at">order_null =</span> <span class="dv">0</span>, <span class="at">order_alt =</span> <span class="dv">1</span>)<span class="sc">$</span>p_value</span>
